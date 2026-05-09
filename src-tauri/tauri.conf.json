@@ -1,0 +1,33 @@
+{
+  "productName": "GEM",
+  "version": "1.0.0",
+  "identifier": "com.jesus.gem",
+  "build": {
+    "frontendDist": "../frontend"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "GEM",
+        "visible": false,
+        "width": 1,
+        "height": 1,
+        "decorations": false,
+        "transparent": true,
+        "skipTaskbar": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/icon.png",
+      "icons/icon.ico"
+    ]
+  }
+}

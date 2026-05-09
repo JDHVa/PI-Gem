@@ -1,0 +1,28 @@
+.env
+data/vtube_token.txt
+
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+venv/
+env/
+.pytest_cache/
+
+# Datos en runtime
+data/chromadb/
+assets/face_landmarker.task
+
+# Rust / Tauri
+src-tauri/target/
+src-tauri/Cargo.lock
+src-tauri/gen/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Logs
+*.log

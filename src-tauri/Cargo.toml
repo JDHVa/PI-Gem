@@ -1,0 +1,20 @@
+[package]
+name = "gem"
+version = "1.0.0"
+description = "GEM — Asistente de IA personal"
+authors = ["Jesus"]
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri        = { version = "2", features = ["tray-icon"] }
+serde        = { version = "1", features = ["derive"] }
+serde_json   = "1"
+reqwest      = { version = "0.12", features = ["json", "blocking"] }
+tokio        = { version = "1", features = ["full"] }
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]
