@@ -1,5 +1,6 @@
 {
-  "productName": "GEM",
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "gem",
   "version": "1.0.0",
   "identifier": "com.jesus.gem",
   "build": {
@@ -10,23 +11,30 @@
       {
         "label": "main",
         "title": "GEM",
-        "visible": true,
-        "width": 340,
-        "height": 560,
+        "width": 480,
+        "height": 800,
+        "minWidth": 380,
+        "minHeight": 600,
+        "resizable": true,
         "decorations": false,
         "transparent": true,
-        "alwaysOnTop": true,
-        "skipTaskbar": false,
-        "resizable": false,
-        "x": 1540,
-        "y": 100
+        "alwaysOnTop": false,
+        "shadow": false
       }
     ],
-    "security": { "csp": null }
+    "security": {
+      "csp": null
+    }
   },
   "bundle": {
     "active": true,
     "targets": "all",
-    "icon": ["icons/icon.png", "icons/icon.ico"]
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
   }
 }

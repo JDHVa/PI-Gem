@@ -1,139 +1,188 @@
-# GEM — Asistente de IA Personal con Vertex AI
+# GEM v3 — Asistente de IA Personal
 
-Asistente de voz con avatar animado, memoria RAG, visión por cámara y ejecución de comandos PowerShell.
+Asistente de voz local con avatar animado, agente con function calling, memoria RAG,
+visión por cámara, ejecución de comandos y rutinas guardadas.
+
+Backend en Python (FastAPI + Gemini), frontend en HTML/JS modular dentro de Tauri.
 
 ## Arquitectura
 
 ```
-Usuario habla → Wake Word → STT (Gemini) → LLM (Gemini) → TTS → Bocinas
-                                                   ↕
-                                            Memoria RAG
-                                           (ChromaDB local)
+                           ┌── Conversación ── Gemini Flash + RAG ─┐
+Usuario habla → VAD → STT ─┤                                       ├── TTS → Bocinas
+                           ├── Agente   ───── function calling ────┤    (con barge-in)
+                           ├── Skills   ───── bash directo ────────┤
+                           └── Pantalla ───── Gemini Vision ───────┘
+                                              ↕
+                                       Memoria RAG (ChromaDB)
+                                       Historial persistente
+                                       Perfil visual del usuario
 ```
 
-## Modos de operación
-
-### Opción A — Google AI Studio (más fácil)
-Gratis para empezar, sin cuenta GCP.
-
-### Opción B — Vertex AI (recomendado para producción)
-Requiere proyecto Google Cloud. Ventajas:
-- Mayor cuota y SLA
-- TTS con voces Neural2 en español de México/EE.UU.
-- Facturación y monitoreo enterprise
-
----
-
-## Instalación
+## Quickstart
 
 ```bash
-# 1. Clonar / descomprimir el proyecto
-# 2. Crear entorno virtual
+git clone <repo>
+cd gem
 python -m venv venv
-venv\Scripts\activate       # Windows
-# source venv/bin/activate   # Linux/Mac
-
-# 3. Instalar dependencias
+source venv/bin/activate          # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-
-# 4. Inicializar
-python inicializar.py
-```
-
----
-
-## Configuración
-
-### AI Studio (Opción A)
-
-1. Obtén tu API key en https://aistudio.google.com/apikey
-2. Edita `.env`:
-   ```env
-   USAR_VERTEX=false
-   GEMINI_API_KEY=AIzaSy...
-   GEMINI_MODELO=gemini-2.5-flash
-   GEMINI_MODELO_STT=gemini-2.5-flash
-   ```
-
-### Vertex AI (Opción B)
-
-1. Habilita APIs en tu proyecto GCP:
-   - **Vertex AI API**: `gcloud services enable aiplatform.googleapis.com`
-   - **Cloud Text-to-Speech API**: `gcloud services enable texttospeech.googleapis.com`
-
-2. Configura autenticación:
-   ```bash
-   # Opción 1 — usuario local (desarrollo)
-   gcloud auth application-default login
-
-   # Opción 2 — service account (producción)
-   export GOOGLE_APPLICATION_CREDENTIALS=/ruta/service-account.json
-   ```
-
-3. Edita `.env`:
-   ```env
-   USAR_VERTEX=true
-   VERTEX_PROJECT=mi-proyecto-gcp
-   VERTEX_LOCATION=us-central1
-
-   GEMINI_MODELO=gemini-2.0-flash-001
-   GEMINI_MODELO_STT=gemini-2.0-flash-001
-
-   TTS_IDIOMA=es-US
-   TTS_VOZ_CLOUD=es-US-Neural2-A
-   ```
-
----
-
-## Ejecutar
-
-```bash
+python inicializar.py             # crea .env, descarga modelo MediaPipe
+# editar .env con tu GEMINI_API_KEY
 python -m backend.main
 ```
 
-Frontend (opcional — Tauri):
+Frontend: abrir `frontend/index.html` con Tauri, o servirlo y abrirlo en el navegador.
+
+## Modos de operación
+
+### A) Google AI Studio (gratis)
+```env
+USAR_VERTEX=false
+GEMINI_API_KEY=AIza...
+```
+Obtén tu key en https://aistudio.google.com/apikey
+
+### B) Vertex AI (recomendado para uso prolongado)
+```env
+USAR_VERTEX=true
+VERTEX_PROJECT=tu-proyecto
+VERTEX_LOCATION=us-central1
+```
 ```bash
-cd src-tauri && cargo tauri dev
+gcloud auth application-default login
 ```
 
-WebSocket de estado: `ws://127.0.0.1:8765/ws`
+## Capacidades
 
----
+### 1. Conversación con memoria
+Cada conversación se vectoriza en ChromaDB. GEM recupera contexto relevante de
+conversaciones previas, proyectos y preferencias en cada turno.
 
-## Wake word
+El historial se persiste entre reinicios en `data/historial.json`. Al pasar de
+N turnos se resume automáticamente para mantener tokens bajos.
 
-Por defecto usa **openWakeWord** (código abierto, gratis).
+### 2. Agente (function calling)
+Cuando dices algo como "crea una carpeta llamada X y mueve los .py adentro",
+GEM enruta al agente, que decide qué herramientas usar (escribir_archivo,
+mover_archivo, listar_directorio, etc.) hasta completar la tarea.
 
-Frases detectadas: `"hey jarvis"`, `"alexa"`, `"hey mycroft"`, `"ok nabu"`
+Herramientas disponibles: `bash`, `leer_archivo`, `escribir_archivo`,
+`editar_archivo`, `listar_directorio`, `crear_directorio`,
+`buscar_en_archivos`, `mover_archivo`, `eliminar`.
 
-Si openWakeWord no está disponible, activa automáticamente el **fallback RMS** (detecta voz por volumen).
+`eliminar` requiere confirmación explícita del usuario en un modal.
 
----
+### 3. Skills (rutinas guardadas)
+```
+Tú: "guarda rutina mañana: code; spotify; chrome github.com"
+GEM: Rutina 'mañana' guardada con 3 pasos.
 
-## Voces TTS disponibles (Vertex AI)
+Tú: "ejecuta rutina mañana"
+GEM: Ejecutando... Rutina completada.
+```
 
-| Nombre | Género | Calidad |
-|--------|--------|---------|
-| es-US-Neural2-A | Femenino | ⭐⭐⭐⭐⭐ |
-| es-US-Neural2-B | Masculino | ⭐⭐⭐⭐⭐ |
-| es-US-Neural2-C | Femenino | ⭐⭐⭐⭐⭐ |
-| es-US-Wavenet-A | Femenino | ⭐⭐⭐⭐ |
-| es-US-Wavenet-B | Masculino | ⭐⭐⭐⭐ |
+Las rutinas viven en `data/skills.json` y se ejecutan como bash directo,
+**sin gastar tokens del LLM**.
 
-Más voces en: https://cloud.google.com/text-to-speech/docs/voices
+### 4. Visión por cámara
+MediaPipe detecta tu emoción y presencia continuamente (sin gastar tokens).
+GEM espeja tu emoción en el avatar.
 
----
+### 5. Visión de pantalla bajo demanda
+```
+Tú: "mira mi pantalla, ¿qué error tiene este código?"
+```
+GEM captura tu pantalla y la manda a Gemini Vision con tu pregunta.
 
-## Endpoints REST
+### 6. Modo proactivo
+Si lo activas (botón 👁 o `/proactivo`), GEM analiza tu cámara con Vision
+**solo** cuando MediaPipe detecta pre-triggers reales: emoción sostenida,
+cambio de fondo, ausencia prolongada, etc. Nunca en intervalos ciegos.
 
-| Método | Ruta | Descripción |
-|--------|------|-------------|
-| GET | `/health` | Estado del servidor |
-| GET | `/estado` | Estado del orquestador |
-| POST | `/chat` | Enviar texto (sin voz) |
-| POST | `/registrar_identidad` | Registrar cara del usuario |
-| POST | `/guardar_contexto` | Añadir info a la memoria |
-| POST | `/silenciar` | Silenciar/activar respuestas de voz |
-| DELETE | `/historial` | Limpiar historial de conversación |
-| WS | `/ws` | WebSocket bidireccional |
+### 7. Barge-in
+Si hablas mientras GEM responde, GEM se calla. Lo controla `BARGE_IN_ACTIVO`.
 
+## Optimización de costos (Vertex AI)
+
+GEM v3 está diseñado para minimizar tokens enviados a Vertex:
+
+| Optimización | Variable | Default |
+|---|---|---|
+| Cache LRU de embeddings RAG | `EMBEDDING_CACHE_SIZE` | 256 |
+| Resumen del historial al exceder N turnos | `HISTORIAL_RESUMEN_TURNOS` | 16 |
+| Redimensionado de imágenes Vision | `VISION_MAX_PIXELS` | 786432 |
+| Calidad JPEG Vision | `VISION_JPEG_QUALITY` | 70 |
+| Modelo ligero para tareas baratas | `GEMINI_MODELO_LIGERO` | flash-lite |
+| Cooldown observador proactivo (s) | (constante) | 900 |
+| Pasos máximos del agente | `AGENTE_MAX_PASOS` | 20 |
+
+Detalles en `CHANGELOG.md`.
+
+## Tests
+
+```bash
+v
+pytest -v
+```
+
+Cubre: herramientas (incluido el blindaje contra auto-confirmación del LLM),
+skills, persistencia de historial, cache de embeddings, regex del orquestador.
+
+## Estructura del proyecto
+
+```
+gem/
+├── backend/
+│   ├── main.py              FastAPI app
+│   ├── config.py            Pydantic settings
+│   ├── orquestador.py       Routing: conversación / agente / skills / screenshot
+│   ├── modulos/
+│   │   ├── gemini_cliente.py   LLM + embeddings + STT + TTS + Vision (con cache)
+│   │   ├── agente.py           Function calling loop
+│   │   ├── herramientas.py     Tools del agente
+│   │   ├── memoria.py          ChromaDB + historial persistente
+│   │   ├── skills.py           Rutinas guardadas
+│   │   ├── screenshot.py       Captura + análisis de pantalla
+│   │   ├── audio.py            STT + TTS + barge-in
+│   │   ├── wake_word.py        VAD (WebRTC o RMS)
+│   │   ├── vision.py           MediaPipe (emociones, rostro)
+│   │   ├── observador.py       Modo proactivo
+│   │   ├── perfil_usuario.py   Memoria visual del usuario
+│   │   └── broadcaster.py      WebSocket broadcast
+│   └── prompts/system_prompt.py
+├── frontend/
+│   ├── index.html           Shell HTML modular
+│   ├── css/main.css
+│   ├── js/                  Módulos ES6
+│   │   ├── main.js          Entry point + namespace window.GEM
+│   │   ├── ws.js            WebSocket + reconexión
+│   │   ├── avatar.js        Animación por emoción
+│   │   ├── chat.js          Envío de texto
+│   │   ├── status.js        Dots + panel
+│   │   ├── skills.js        Modal de rutinas
+│   │   ├── confirm.js       Modal de confirmación
+│   │   ├── agent.js         Trazas en vivo del agente
+│   │   └── app.js           Handlers misc
+│   └── assets/avatar/       Frames pixel-art (tú los pones)
+├── tests/                   pytest
+├── src-tauri/               Wrapper de escritorio
+├── inicializar.py
+├── requirements.txt
+├── .env.example
+└── CHANGELOG.md
+```
+
+## Frases que entiende GEM (además de conversación)
+
+| Frase | Qué hace |
+|---|---|
+| "crea/instala/ejecuta/mueve/lista/busca..." | Activa el agente |
+| "guarda rutina <nombre>: cmd1; cmd2; cmd3" | Crea una skill |
+| "ejecuta rutina <nombre>" | Corre los comandos guardados |
+| "mira/revisa/analiza mi pantalla" | Screenshot + Vision |
+| "elimina/borra <ruta>" | Pide confirmación en el frontend |
+
+## Licencia
+
+MIT

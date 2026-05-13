@@ -8,7 +8,7 @@ use tauri::{
     Manager,
 };
 
-const BACKEND_URL: &str = "http://127.0.0.1:8765";
+const BACKEND_URL: &str = "http://127.0.0.1:8770";
 
 struct BackendProcess(Mutex<Option<Child>>);
 
@@ -29,7 +29,7 @@ fn iniciar_backend() -> Option<Child> {
     };
 
     c.args(["-m", "uvicorn", "backend.main:app",
-            "--host", "127.0.0.1", "--port", "8765",
+            "--host", "127.0.0.1", "--port", "8770",
             "--log-level", "warning"])
      .current_dir(raiz);
     c.spawn().ok()
@@ -41,8 +41,6 @@ fn post(ruta: &str, body: serde_json::Value) {
         let _ = reqwest::blocking::Client::new().post(&url).json(&body).send();
     });
 }
-
-// ── Comandos Tauri ──
 
 #[tauri::command]
 fn get_estado() -> String {
@@ -78,13 +76,11 @@ fn main() {
     tauri::Builder::default()
         .manage(BackendProcess(Mutex::new(None)))
         .setup(|app| {
-            // Iniciar backend Python
             let proceso = iniciar_backend();
             if let Ok(mut g) = app.state::<BackendProcess>().0.lock() {
                 *g = proceso;
             }
 
-            // Menú del tray
             let activar_it   = MenuItem::with_id(app, "activar",    "▶  Activar GEM",       true, None::<&str>)?;
             let silenciar_it = MenuItem::with_id(app, "silenciar",  "⏸  Silenciar GEM",     true, None::<&str>)?;
             let registrar    = MenuItem::with_id(app, "registrar",  "📷  Registrar mi cara", true, None::<&str>)?;

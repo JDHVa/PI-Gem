@@ -1,415 +1,131 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>GEM</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Outfit:wght@300;400;600&display=swap');
-  :root {
-    --bg:    rgba(7,9,14,0.96);
-    --panel: rgba(14,18,28,0.9);
-    --bord:  rgba(0,200,255,0.15);
-    --cyan:  #00c8ff; --green: #00ff88;
-    --amb:   #ffaa00; --red:   #ff3355;
-    --dim:   #3a4a5a; --text:  #ccd8e8; --sub: #4a6070;
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>GEM</title>
+  <link rel="stylesheet" href="css/main.css"/>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+      "@pixiv/three-vrm": "https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@3.1.4/lib/three-vrm.module.js"
+    }
   }
-  * { box-sizing:border-box; margin:0; padding:0; }
-  body { background:var(--bg); font-family:'Outfit',sans-serif; color:var(--text);
-    height:100vh; overflow:hidden; display:flex; flex-direction:column;
-    border-radius:16px; border:1px solid var(--bord); }
-
-  /* Drag */
-  #drag { -webkit-app-region:drag; display:flex; align-items:center;
-    justify-content:space-between; padding:8px 14px 4px;
-    background:rgba(0,0,0,.2); border-bottom:1px solid var(--bord); flex-shrink:0; }
-  #drag .name { font-family:'Space Mono',monospace; font-size:11px;
-    letter-spacing:3px; color:var(--cyan); opacity:.7; }
-  #drag .x { -webkit-app-region:no-drag; width:10px; height:10px;
-    border-radius:50%; background:var(--dim); cursor:pointer; }
-  #drag .x:hover { background:var(--red); }
-
-  /* Avatar */
-  #av-wrap { flex-shrink:0; display:flex; justify-content:center; padding:10px 0 6px; }
-  #avatar { width:175px; height:175px; object-fit:contain; image-rendering:pixelated;
-    filter:drop-shadow(0 0 16px rgba(0,200,255,.2)); transition:filter .3s; }
-  #avatar.talk { filter:drop-shadow(0 0 28px rgba(0,200,255,.65)); }
-
-  /* Badge */
-  #badge { display:flex; align-items:center; gap:7px; padding:4px 14px;
-    margin:0 auto 6px; border-radius:20px; font-family:'Space Mono',monospace;
-    font-size:10px; letter-spacing:1px; text-transform:uppercase;
-    border:1px solid var(--bord); background:var(--panel); width:fit-content; transition:all .3s; }
-  #badge .p { width:6px; height:6px; border-radius:50%; }
-  #badge.escuchando  { border-color:rgba(0,255,136,.4); color:var(--green); }
-  #badge.escuchando  .p { background:var(--green); animation:pf .6s infinite; }
-  #badge.procesando  { border-color:rgba(255,170,0,.4); color:var(--amb); }
-  #badge.procesando  .p { background:var(--amb); animation:pa 1s infinite; }
-  #badge.gem-habla   { border-color:rgba(0,200,255,.5); color:var(--cyan); }
-  #badge.gem-habla   .p { background:var(--cyan); animation:pa .8s infinite; }
-  #badge.idle        { border-color:var(--bord); color:var(--sub); }
-  #badge.idle        .p { background:var(--dim); }
-  @keyframes pa { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(1.5)} }
-  @keyframes pf { 0%,100%{opacity:1} 50%{opacity:.2} }
-
-  /* VAD bars */
-  #vad { display:flex; align-items:center; justify-content:center; gap:3px;
-    height:26px; margin:0 auto 4px; opacity:0; transition:opacity .3s; }
-  #vad.on { opacity:1; }
-  #vad span { display:inline-block; width:3px; border-radius:2px; background:var(--green);
-    animation:vw .8s ease-in-out infinite; }
-  #vad span:nth-child(1){animation-delay:.0s} #vad span:nth-child(2){animation-delay:.1s}
-  #vad span:nth-child(3){animation-delay:.2s} #vad span:nth-child(4){animation-delay:.1s}
-  #vad span:nth-child(5){animation-delay:.0s}
-  @keyframes vw { 0%,100%{height:4px} 50%{height:20px} }
-
-  /* Last message */
-  #msg { flex:1; margin:0 12px; padding:9px 13px; background:var(--panel);
-    border:1px solid var(--bord); border-radius:10px; font-size:12.5px;
-    line-height:1.55; overflow-y:auto; min-height:55px; max-height:110px; }
-  #msg:empty::before { content:"Esperando..."; color:var(--sub); font-style:italic; font-size:12px; }
-
-  /* Dots */
-  #dots { display:flex; align-items:center; justify-content:center;
-    gap:16px; padding:7px 12px; flex-shrink:0; }
-  .di { display:flex; flex-direction:column; align-items:center; gap:3px;
-    cursor:pointer; position:relative; }
-  .d { width:10px; height:10px; border-radius:50%; background:var(--dim); transition:all .3s; }
-  .d.ok   { background:var(--green); box-shadow:0 0 6px rgba(0,255,136,.5); }
-  .d.warn { background:var(--amb);   box-shadow:0 0 6px rgba(255,170,0,.5); }
-  .d.err  { background:var(--red);   box-shadow:0 0 6px rgba(255,51,85,.5); }
-  .d.info { background:var(--cyan);  box-shadow:0 0 6px rgba(0,200,255,.5); }
-  .dl { font-family:'Space Mono',monospace; font-size:8px; color:var(--sub);
-    text-transform:uppercase; letter-spacing:.5px; }
-  .di:hover .tt { display:block; }
-  .tt { display:none; position:absolute; bottom:calc(100% + 8px); left:50%;
-    transform:translateX(-50%); background:rgba(7,9,14,.98);
-    border:1px solid var(--bord); border-radius:8px; padding:7px 10px;
-    white-space:nowrap; font-size:10px; z-index:100; min-width:120px;
-    font-family:'Space Mono',monospace; line-height:1.7; pointer-events:none; }
-  .tt::after { content:''; position:absolute; top:100%; left:50%;
-    transform:translateX(-50%); border:5px solid transparent; border-top-color:var(--bord); }
-
-  /* Panel expandido */
-  #panel { display:none; position:absolute; bottom:66px; left:12px; right:12px;
-    background:rgba(6,8,12,.98); border:1px solid var(--bord); border-radius:12px;
-    padding:11px 13px; z-index:200; font-family:'Space Mono',monospace;
-    font-size:10px; line-height:2; }
-  #panel.on { display:block; }
-  #panel .pt { font-size:9px; letter-spacing:2px; color:var(--cyan);
-    text-transform:uppercase; margin-bottom:5px;
-    border-bottom:1px solid var(--bord); padding-bottom:3px; }
-  #panel .pc { float:right; cursor:pointer; color:var(--sub); }
-  #panel .pc:hover { color:var(--red); }
-  .pr { display:flex; justify-content:space-between; gap:8px; }
-  .pk { color:var(--sub); } .pv { text-align:right; }
-  .pv.ok{color:var(--green)} .pv.warn{color:var(--amb)}
-  .pv.err{color:var(--red)}  .pv.info{color:var(--cyan)}
-
-  /* Input */
-  #inp { display:flex; gap:8px; padding:7px 12px 11px; flex-shrink:0; }
-  #ti { flex:1; background:var(--panel); border:1px solid var(--bord);
-    border-radius:10px; padding:9px 13px; color:var(--text);
-    font-family:'Outfit',sans-serif; font-size:13px; outline:none; }
-  #ti:focus { border-color:rgba(0,200,255,.5); }
-  #ti::placeholder { color:var(--sub); }
-  #sb { width:36px; height:36px; border-radius:10px; background:rgba(0,200,255,.1);
-    border:1px solid rgba(0,200,255,.3); color:var(--cyan); font-size:15px;
-    cursor:pointer; display:flex; align-items:center; justify-content:center; }
-  #sb:hover { background:rgba(0,200,255,.2); }
-  #sb:disabled { opacity:.3; cursor:not-allowed; }
-  ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-track{background:transparent}
-  ::-webkit-scrollbar-thumb{background:var(--dim);border-radius:2px}
-</style>
+  </script>
 </head>
 <body>
 
 <div id="drag">
-  <span class="name">G E M</span>
-  <div class="x" onclick="ocultarVentana()"></div>
+  <div class="name">GEM</div>
+  <div class="x" onclick="window.GEM.app.ocultarVentana()" title="Cerrar"></div>
 </div>
 
-<div id="av-wrap"><img id="avatar" alt="GEM"/></div>
+<div id="av-wrap">
+  <img id="avatar" alt="GEM"/>
+</div>
 
 <div id="badge" class="idle">
   <div class="p"></div>
   <span id="btxt">En espera</span>
 </div>
 
-<div id="vad"><span></span><span></span><span></span><span></span><span></span></div>
+<div id="vad">
+  <span></span><span></span><span></span><span></span><span></span>
+</div>
 
 <div id="msg"></div>
 
 <div id="dots">
-  <div class="di" onclick="togglePanel()">
-    <div class="d" id="d-cam"></div><div class="dl">Cam</div>
-    <div class="tt" id="t-cam">Cámara</div>
-  </div>
-  <div class="di" onclick="togglePanel()">
-    <div class="d" id="d-face"></div><div class="dl">Rostro</div>
-    <div class="tt" id="t-face">Rostro</div>
-  </div>
-  <div class="di" onclick="togglePanel()">
-    <div class="d" id="d-id"></div><div class="dl">ID</div>
-    <div class="tt" id="t-id">Identidad</div>
-  </div>
-  <div class="di" onclick="togglePanel()">
-    <div class="d info" id="d-emo"></div><div class="dl">Emo</div>
-    <div class="tt" id="t-emo">Emoción</div>
-  </div>
-  <div class="di" onclick="togglePanel()">
-    <div class="d" id="d-mem"></div><div class="dl">Mem</div>
-    <div class="tt" id="t-mem">Memoria</div>
-  </div>
-  <div class="di" onclick="togglePanel()">
-    <div class="d" id="d-sys"></div><div class="dl">Sys</div>
-    <div class="tt" id="t-sys">Sistema</div>
-  </div>
+  <div class="di"><div id="d-cam"  class="d"></div><div class="dl">cam</div>
+    <div class="tt" id="t-cam">Cámara</div></div>
+  <div class="di"><div id="d-face" class="d"></div><div class="dl">face</div>
+    <div class="tt" id="t-face">Rostro</div></div>
+  <div class="di"><div id="d-id"   class="d"></div><div class="dl">id</div>
+    <div class="tt" id="t-id">ID</div></div>
+  <div class="di"><div id="d-emo"  class="d"></div><div class="dl">emo</div>
+    <div class="tt" id="t-emo">Emoción</div></div>
+  <div class="di"><div id="d-mem"  class="d"></div><div class="dl">mem</div>
+    <div class="tt" id="t-mem">Memoria</div></div>
+  <div class="di"><div id="d-sys"  class="d"></div><div class="dl">sys</div>
+    <div class="tt" id="t-sys">Sistema</div></div>
 </div>
 
 <div id="panel">
-  <div class="pt">Estado del sistema <span class="pc" onclick="togglePanel()">✕</span></div>
+  <div class="pt">Estado del sistema</div>
   <div id="pc"></div>
 </div>
 
-<div id="inp">
-  <input id="ti" type="text" placeholder="Escribe un mensaje..." autocomplete="off"/>
-  <button id="sb" onclick="enviar()">▶</button>
+<div id="input-row">
+  <input id="ti" type="text" placeholder="Escribe algo..."/>
+  <button id="sb" onclick="window.GEM.chat.enviar()">↵</button>
+  <button id="btn-proactivo" class="iconbtn" onclick="window.GEM.app.toggleProactivo()"
+          title="Modo observador">👁</button>
+  <button id="btn-skills" class="iconbtn cyan" onclick="window.GEM.skills.abrir()"
+          title="Rutinas guardadas">⚡</button>
+  <button id="btn-perfil" class="iconbtn cyan" onclick="window.GEM.app.abrirModalPerfil()"
+          title="Registrar perfil visual">📷</button>
+  <button id="btn-cam" class="iconbtn cyan" onclick="window.GEM.camara.abrir()"
+          title="Ver qué ve GEM">📹</button>
+  <button id="btn-mute" class="iconbtn red" onclick="window.GEM.app.toggleMute()"
+          title="Silenciar micrófono">🎤</button>
 </div>
 
-<script>
-const BACKEND = "http://127.0.0.1:8765";
+<div id="modal-perfil" class="modal">
+  <div class="modal-box">
+    <div class="modal-title">Registrar perfil visual</div>
+    <p class="modal-text">
+      GEM va a analizar la cámara ahora mismo y guardar tu apariencia habitual,
+      el cuarto donde estás y tu estado de ánimo base.
+    </p>
+    <textarea id="perfil-desc" rows="3"
+      placeholder="Descríbete brevemente (opcional)"></textarea>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="window.GEM.app.cerrarModalPerfil()">Cancelar</button>
+      <button class="btn-ok" onclick="window.GEM.app.registrarPerfil()">Registrar 📷</button>
+    </div>
+  </div>
+</div>
 
-// ── Nombres reales de archivos por emoción ──────────────────────────
-// Coloca estas imágenes en: frontend/assets/avatar/{emocion}/
-const FRAMES = {
-  alegre:    ["Happy1.png",        "Happy2.png",        "Happy3.png"],
-  ansioso:   ["Tired1 copy 2.png", "Tired1 copy 3.png", "Tired1 copy 4.png"],
-  confundido:["Tired1.png",        "Tired1 copy.png",   "Tired1 copy 2.png"],
-  dormido:   ["Sleepy1.png",       "Sleepy2.png",       "Sleepy3.png"],
-  enojado:   ["Angry1.png",        "Angry2.png",        "Angry2 copy.png"],
-  hablando:  ["Speaking1.png",     "Speaking2.png",     "Speaking1.png"],  // 2 frames → loop
-  neutro:    ["Normal1.png",       "Normal1 copy.png",  "Normal1 copy 2.png"],
-  pensativo: ["Thinking1.png",     "Thinking2.png",     "Thinking3.png"],
-  triste:    ["Sad1.png",          "Sad2.png",          "Sad2 copy.png"],
-};
+<div id="modal-skills" class="modal">
+  <div class="modal-box wide">
+    <div class="modal-title">Rutinas guardadas</div>
+    <div id="skills-list" class="skills-list">Cargando...</div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="window.GEM.skills.cerrar()">Cerrar</button>
+    </div>
+  </div>
+</div>
 
-const EMOJI = {
-  alegre:"😊", ansioso:"😰", confundido:"😕", dormido:"😴",
-  enojado:"😠", hablando:"🗣️", neutro:"😐", pensativo:"🤔", triste:"😢"
-};
+<div id="modal-confirm" class="modal">
+  <div class="modal-box">
+    <div class="modal-title">Confirmar acción</div>
+    <p id="confirm-text" class="modal-text"></p>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="window.GEM.confirm.responder(false)">Cancelar</button>
+      <button class="btn-danger" onclick="window.GEM.confirm.responder(true)">Confirmar</button>
+    </div>
+  </div>
+</div>
 
-// ── Estado del avatar ───────────────────────────────────────────────
-let emocionActual = "alegre";   // inicia en alegre
-let ttsActivo     = false;
-let frameIdx      = 0;
-let animTimer     = null;
-let panelOpen     = false;
-let lastEstado    = {};
+<div id="modal-camara" class="modal">
+  <div class="modal-box wide">
+    <div class="modal-title">Lo que ve GEM</div>
+    <img id="cam-stream" class="cam-stream" alt="cámara"/>
+    <div id="cam-info" class="cam-info">—</div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="window.GEM.camara.cerrar()">Cerrar</button>
+      <button class="btn-ok" onclick="window.GEM.camara.registrar()">Registrar rostro 👤</button>
+    </div>
+  </div>
+</div>
 
-const av = document.getElementById("avatar");
+<div id="agent-trace" class="agent-trace">
+  <div class="at-header">Agente trabajando</div>
+  <div id="at-pasos" class="at-pasos"></div>
+</div>
 
-// ── Funciones de avatar ─────────────────────────────────────────────
-
-function mostrarFrame(emo, idx) {
-  const lista = FRAMES[emo] || FRAMES.neutro;
-  // encodeURIComponent maneja espacios en nombres de archivo
-  av.src = `assets/avatar/${emo}/${encodeURIComponent(lista[idx % lista.length])}`;
-}
-
-function cambiarEmocion(nuevaEmo) {
-  if (!FRAMES[nuevaEmo]) return;            // ignora emociones sin carpeta
-  emocionActual = nuevaEmo;
-  if (!ttsActivo) mostrarFrame(emocionActual, 0);
-}
-
-function iniciarAnimHabla() {
-  if (ttsActivo) return;
-  ttsActivo = true;
-  av.classList.add("talk");
-  frameIdx = 0;
-  animTimer = setInterval(() => {
-    frameIdx = (frameIdx + 1) % 3;
-    mostrarFrame(emocionActual, frameIdx);  // usa la emoción actual ("hablando")
-  }, 110);
-}
-
-function detenerAnimHabla() {
-  ttsActivo = false;
-  av.classList.remove("talk");
-  clearInterval(animTimer); animTimer = null;
-  mostrarFrame(emocionActual, 0);
-}
-
-// ── Badge de estado ─────────────────────────────────────────────────
-
-function setBadge(cls, txt) {
-  document.getElementById("badge").className = cls;
-  document.getElementById("btxt").textContent = txt;
-}
-
-// ── WebSocket ───────────────────────────────────────────────────────
-
-let ws;
-function conectarWS() {
-  ws = new WebSocket("ws://localhost:8765/ws");
-
-  ws.onmessage = ({ data }) => {
-    const d = JSON.parse(data);
-
-    // Cambio de emoción enviado por el backend (orquestador)
-    if (d.tipo === "expresion") {
-      cambiarEmocion(d.emocion);
-    }
-
-    // Lipsync: GEM está hablando por TTS
-    else if (d.tipo === "lipsync") {
-      if (d.terminado) {
-        detenerAnimHabla();
-        setBadge("idle", "En espera");
-      } else if ((d.amplitud || 0) > 0.01 && !ttsActivo) {
-        iniciarAnimHabla();
-        setBadge("gem-habla", "Respondiendo");
-      }
-    }
-
-    // VAD: usuario hablando
-    else if (d.tipo === "vad") {
-      document.getElementById("vad").classList.toggle("on", d.hablando);
-      setBadge(d.hablando ? "escuchando" : (ttsActivo ? "gem-habla" : "idle"),
-               d.hablando ? "Te escucho" : (ttsActivo ? "Respondiendo" : "En espera"));
-    }
-
-    // GEM procesando (transcribiendo / generando)
-    else if (d.tipo === "procesando") {
-      if (d.activo) setBadge("procesando", "Pensando...");
-      else if (!ttsActivo) setBadge("idle", "En espera");
-    }
-
-    // Respuesta de texto (opcional)
-    else if (d.tipo === "respuesta") {
-      document.getElementById("msg").textContent = d.texto || "";
-    }
-  };
-
-  ws.onclose = () => setTimeout(conectarWS, 2000);
-  ws.onerror = () => ws.close();
-}
-
-conectarWS();
-mostrarFrame("alegre", 0);   // ← estado inicial: alegre
-
-// ── Polling /estado cada 2 s ────────────────────────────────────────
-
-async function pollEstado() {
-  try {
-    const r = await fetch(`${BACKEND}/estado`);
-    if (!r.ok) return;
-    lastEstado = await r.json();
-    actualizarDots(lastEstado);
-  } catch(_) {}
-}
-
-function dot(id, cls, tt) {
-  const d = document.getElementById(`d-${id}`);
-  if (d) d.className = `d ${cls}`;
-  const t = document.getElementById(`t-${id}`);
-  if (t) t.textContent = tt;
-}
-
-function actualizarDots(e) {
-  const v = e.vision || {}, m = e.memoria || {};
-  const camOk   = v.emocion !== undefined;
-  const faceOk  = !!v.rostro_detectado;
-  const idReg   = !!v.identidad_activa;
-  const idOk    = idReg && v.es_usuario;
-  const emoUser = v.emocion || "neutro";
-  const emoGEM  = e.emocion_gem || "alegre";
-  const memTot  = Object.values(m).reduce((a,b) => a+b, 0);
-
-  dot("cam",  camOk  ? "ok"   : "err",  `Cámara: ${camOk ? "activa" : "sin señal"}`);
-  dot("face", faceOk ? "ok"   : "warn", `Rostro: ${faceOk ? "detectado" : "no detectado"}`);
-  dot("id",   !idReg ? "warn" : (idOk ? "ok" : "err"),
-              `ID: ${!idReg ? "sin registrar" : (idOk ? "reconocido ✓" : "no reconocido ✗")}`);
-  dot("emo",  "info", `${EMOJI[emoUser]||"😐"} usuario · ${EMOJI[emoGEM]||"😐"} GEM`);
-  dot("mem",  memTot > 0 ? "ok" : "warn", `Memoria: ${memTot} registros`);
-  dot("sys",  e.silenciado ? "warn" : "ok",
-              `${e.procesando ? "⚙ procesando" : "idle"} · ${e.silenciado ? "🔇" : "🔊"}`);
-
-  if (panelOpen) renderPanel(e);
-}
-
-// ── Panel expandido ─────────────────────────────────────────────────
-
-function togglePanel() {
-  panelOpen = !panelOpen;
-  document.getElementById("panel").classList.toggle("on", panelOpen);
-  if (panelOpen) renderPanel(lastEstado);
-}
-
-function renderPanel(e) {
-  const v = e.vision || {}, m = e.memoria || {};
-  const eu = v.emocion || "neutro", eg = e.emocion_gem || "alegre";
-  const rows = [
-    ["Cámara",      v.emocion !== undefined ? ["activa","ok"]           : ["sin señal","err"]],
-    ["Rostro",      v.rostro_detectado       ? ["detectado","ok"]        : ["no detectado","warn"]],
-    ["Identidad",   !v.identidad_activa      ? ["sin registrar","warn"]  : (v.es_usuario ? ["reconocido ✓","ok"] : ["no reconocido ✗","err"])],
-    ["Emo usuario", [`${EMOJI[eu]||"😐"} ${eu}`, "info"]],
-    ["Emo GEM",     [`${EMOJI[eg]||"😐"} ${eg}`, "info"]],
-    ["Turnos",      [`${e.historial_turnos||0}`, ""]],
-    ["Conversaciones",[`${m.conversaciones||0}`, m.conversaciones > 0 ? "ok" : "warn"]],
-    ["Proyectos",   [`${m.proyectos||0}`, ""]],
-    ["Preferencias",[`${m.preferencias||0}`, ""]],
-    ["Comandos",    [`${m.comandos||0}`, ""]],
-    ["Procesando",  [e.procesando ? "sí ⚙" : "no", e.procesando ? "warn" : "ok"]],
-    ["Silenciado",  [e.silenciado ? "🔇 sí" : "🔊 no", e.silenciado ? "warn" : "ok"]],
-  ];
-  document.getElementById("pc").innerHTML = rows.map(([k,[v2,c]])=>
-    `<div class="pr"><span class="pk">${k}</span><span class="pv ${c}">${v2}</span></div>`
-  ).join("");
-}
-
-document.addEventListener("click", ev => {
-  const p = document.getElementById("panel");
-  const d = document.getElementById("dots");
-  if (panelOpen && !p.contains(ev.target) && !d.contains(ev.target)) {
-    panelOpen = false; p.classList.remove("on");
-  }
-});
-
-// ── Enviar texto ────────────────────────────────────────────────────
-
-async function enviar() {
-  const ti = document.getElementById("ti");
-  const sb = document.getElementById("sb");
-  const txt = ti.value.trim();
-  if (!txt) return;
-  ti.value = ""; sb.disabled = true;
-  setBadge("procesando", "Pensando...");
-  try {
-    const r = await fetch(`${BACKEND}/chat`, {
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ texto: txt })
-    });
-    const d = await r.json();
-    if (d.respuesta) document.getElementById("msg").textContent = d.respuesta;
-  } catch(_) {
-    document.getElementById("msg").textContent = "Error al conectar.";
-  } finally {
-    sb.disabled = false;
-  }
-}
-
-document.getElementById("ti").addEventListener("keydown", e => {
-  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); enviar(); }
-});
-
-function ocultarVentana() {
-  if (window.__TAURI__) window.__TAURI__.window.getCurrent().hide();
-}
-
-pollEstado();
-setInterval(pollEstado, 2000);
-</script>
+<script type="module" src="js/main.js"></script>
 </body>
 </html>
