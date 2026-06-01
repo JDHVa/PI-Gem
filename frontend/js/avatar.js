@@ -1,6 +1,12 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { VRMLoaderPlugin, VRMUtils } from "@pixiv/three-vrm";
+import { Jarvis } from './jarvis.js';
+import { BACKEND } from './main.js';
+
+// Voces TTS para cada modo
+const VOZ_GEM    = "es-US-Chirp3-HD-Leda";   // femenina
+const VOZ_JARVIS = "es-US-Chirp3-HD-Orus";   // masculina
 
 const VRM_PATH = "assets/avatar/AvatarSample_M.vrm";
 
@@ -32,225 +38,240 @@ export const EMOJI = {
 // El sistema interpola con easing entre keyframes.
 const GESTOS = {
   saludar: {
-    duracion: 1.8,
+    duracion: 3.5,
     keys: [
-      { t: 0.0, poses: { rightUpperArm: [0, 0, -1.2],  rightLowerArm: [0, 0.2, 0] } },
-      { t: 0.3, poses: { rightUpperArm: [0, 0, -2.6],  rightLowerArm: [0, -1.0, 0] } },
-      { t: 0.6, poses: { rightUpperArm: [0, 0, -2.5],  rightLowerArm: [0, -1.4, 0] } },
-      { t: 0.9, poses: { rightUpperArm: [0, 0, -2.6],  rightLowerArm: [0, -1.0, 0] } },
-      { t: 1.2, poses: { rightUpperArm: [0, 0, -2.5],  rightLowerArm: [0, -1.4, 0] } },
-      { t: 1.8, poses: { rightUpperArm: [0, 0, -1.2],  rightLowerArm: [0, 0.2, 0] } },
-    ],
-  },
-
-  asentir: {
-    duracion: 1.2,
-    keys: [
-      { t: 0.0, poses: { head: [0, 0, 0] } },
-      { t: 0.25, poses: { head: [0.3, 0, 0] } },
-      { t: 0.5, poses: { head: [-0.05, 0, 0] } },
-      { t: 0.75, poses: { head: [0.25, 0, 0] } },
-      { t: 1.0, poses: { head: [-0.02, 0, 0] } },
-      { t: 1.2, poses: { head: [0, 0, 0] } },
-    ],
-  },
-
-  negar: {
-    duracion: 1.2,
-    keys: [
-      { t: 0.0, poses: { head: [0, 0, 0] } },
-      { t: 0.2, poses: { head: [0, 0.4, 0] } },
-      { t: 0.4, poses: { head: [0, -0.4, 0] } },
-      { t: 0.6, poses: { head: [0, 0.4, 0] } },
-      { t: 0.8, poses: { head: [0, -0.3, 0] } },
-      { t: 1.2, poses: { head: [0, 0, 0] } },
-    ],
-  },
-
-  pensar: {
-    duracion: 2.5,
-    keys: [
-      { t: 0.0, poses: {
-        rightUpperArm: [0, 0, -1.2], rightLowerArm: [0, 0.2, 0], head: [0, 0, 0]
-      } },
+      { t: 0.0, poses: {} },
       { t: 0.6, poses: {
-        rightUpperArm: [0.2, 0, -1.8], rightLowerArm: [0, -1.8, 0], head: [0.1, 0.2, 0.1]
+        upperChest: [0.06, 0, 0],
+        rightShoulder: [-0.04, 0.01, -0.04],
+        rightUpperArm: [0.26, 0.06, -1.04],
+        rightLowerArm: [-0.69, 0.16, -1.14],
+        rightHand: [0.76, 0.96, 1.31],
       } },
-      { t: 2.0, poses: {
-        rightUpperArm: [0.2, 0, -1.8], rightLowerArm: [0, -1.8, 0], head: [0.1, 0.2, 0.1]
+      { t: 3.0, poses: {
+        upperChest: [0.06, 0, 0],
+        rightShoulder: [-0.04, 0.01, -0.04],
+        rightUpperArm: [0.26, 0.06, -1.04],
+        rightLowerArm: [-0.69, 0.16, -1.14],
+        rightHand: [0.76, 0.96, 1.31],
       } },
-      { t: 2.5, poses: {
-        rightUpperArm: [0, 0, -1.2], rightLowerArm: [0, 0.2, 0], head: [0, 0, 0]
-      } },
+      { t: 3.5, poses: {} },
     ],
   },
 
-  encogerse: {
-    duracion: 1.4,
+  saludar_izquierda: {
+    duracion: 3.5,
     keys: [
-      { t: 0.0, poses: {
-        leftUpperArm: [0, 0, 1.2], rightUpperArm: [0, 0, -1.2],
-        leftLowerArm: [0, -0.2, 0], rightLowerArm: [0, 0.2, 0],
+      { t: 0.0, poses: {} },
+      { t: 0.6, poses: {
+        leftShoulder: [0.41, 0.51, 0.36],
+        leftUpperArm: [0.21, 0.51, 0.81],
+        rightShoulder: [1.21, -0.19, -0.29],
+        rightUpperArm: [-0.39, 0.31, 0.71],
+        rightLowerArm: [-1.19, 2.61, 1.66],
+        rightHand: [-0.34, 0.01, -0.09],
       } },
-      { t: 0.4, poses: {
-        leftUpperArm: [-0.3, 0, 0.7], rightUpperArm: [-0.3, 0, -0.7],
-        leftLowerArm: [0, -1.4, 0], rightLowerArm: [0, 1.4, 0],
+      { t: 3.0, poses: {
+        leftShoulder: [0.41, 0.51, 0.36],
+        leftUpperArm: [0.21, 0.51, 0.81],
+        rightShoulder: [1.21, -0.19, -0.29],
+        rightUpperArm: [-0.39, 0.31, 0.71],
+        rightLowerArm: [-1.19, 2.61, 1.66],
+        rightHand: [-0.34, 0.01, -0.09],
       } },
-      { t: 0.9, poses: {
-        leftUpperArm: [-0.3, 0, 0.7], rightUpperArm: [-0.3, 0, -0.7],
-        leftLowerArm: [0, -1.4, 0], rightLowerArm: [0, 1.4, 0],
-      } },
-      { t: 1.4, poses: {
-        leftUpperArm: [0, 0, 1.2], rightUpperArm: [0, 0, -1.2],
-        leftLowerArm: [0, -0.2, 0], rightLowerArm: [0, 0.2, 0],
-      } },
-    ],
-  },
-
-  senalar: {
-    duracion: 1.5,
-    keys: [
-      { t: 0.0, poses: { rightUpperArm: [0, 0, -1.2], rightLowerArm: [0, 0.2, 0] } },
-      { t: 0.4, poses: { rightUpperArm: [-0.5, 0, -0.4], rightLowerArm: [0, 0, 0] } },
-      { t: 1.1, poses: { rightUpperArm: [-0.5, 0, -0.4], rightLowerArm: [0, 0, 0] } },
-      { t: 1.5, poses: { rightUpperArm: [0, 0, -1.2], rightLowerArm: [0, 0.2, 0] } },
+      { t: 3.5, poses: {} },
     ],
   },
 
   celebrar: {
-    duracion: 1.6,
+    duracion: 3.8,
     keys: [
-      { t: 0.0, poses: {
-        leftUpperArm: [0, 0, 1.2], rightUpperArm: [0, 0, -1.2],
-        leftLowerArm: [0, -0.2, 0], rightLowerArm: [0, 0.2, 0],
+      { t: 0.0, poses: {} },
+      { t: 0.5, poses: {
+        upperChest: [0.01, 0, 0],
+        leftShoulder: [0.26, 0.11, -0.09],
+        leftUpperArm: [0.81, 0.76, 0.46],
+        leftLowerArm: [0.91, -0.44, 0.11],
+        leftHand: [0.86, 0, 0.71],
+        rightShoulder: [-2.19, 0.11, -0.09],
+        rightUpperArm: [0.81, -0.19, 0.46],
+        rightLowerArm: [0.96, -0.34, 0.11],
+        rightHand: [0.71, 0.26, 0.41],
       } },
-      { t: 0.3, poses: {
-        leftUpperArm: [-1.5, 0, 2.7], rightUpperArm: [-1.5, 0, -2.7],
-        leftLowerArm: [0, 0, 0], rightLowerArm: [0, 0, 0],
+      { t: 3.3, poses: {
+        upperChest: [0.01, 0, 0],
+        leftShoulder: [0.26, 0.11, -0.09],
+        leftUpperArm: [0.81, 0.76, 0.46],
+        leftLowerArm: [0.91, -0.44, 0.11],
+        leftHand: [0.86, 0, 0.71],
+        rightShoulder: [-2.19, 0.11, -0.09],
+        rightUpperArm: [0.81, -0.19, 0.46],
+        rightLowerArm: [0.96, -0.34, 0.11],
+        rightHand: [0.71, 0.26, 0.41],
       } },
-      { t: 0.7, poses: {
-        leftUpperArm: [-1.7, 0, 2.7], rightUpperArm: [-1.7, 0, -2.7],
-        leftLowerArm: [0, 0, 0], rightLowerArm: [0, 0, 0],
-      } },
-      { t: 1.0, poses: {
-        leftUpperArm: [-1.5, 0, 2.7], rightUpperArm: [-1.5, 0, -2.7],
-      } },
-      { t: 1.6, poses: {
-        leftUpperArm: [0, 0, 1.2], rightUpperArm: [0, 0, -1.2],
-        leftLowerArm: [0, -0.2, 0], rightLowerArm: [0, 0.2, 0],
-      } },
+      { t: 3.8, poses: {} },
     ],
   },
 
   facepalm: {
-    duracion: 2.2,
+    duracion: 4.5,
     keys: [
-      { t: 0.0, poses: {
-        rightUpperArm: [0, 0, -1.2], rightLowerArm: [0, 0.2, 0], head: [0, 0, 0]
+      { t: 0.0, poses: {} },
+      { t: 0.6, poses: {
+        head: [0, 0, -0.29],
+        neck: [-0.29, -0.64, 0],
+        chest: [0.01, 0, 0],
+        upperChest: [-0.09, 0, 0],
+        leftShoulder: [0.26, 0.11, -0.09],
+        leftUpperArm: [0.81, 1.26, 0.61],
+        leftLowerArm: [0.56, 1.46, -0.19],
+        leftHand: [0.86, 0, 0.71],
+        rightShoulder: [1.11, -0.09, -0.34],
+        rightUpperArm: [1.31, 0.06, 1.06],
+        rightLowerArm: [0.06, 2.46, 1.96],
+        rightHand: [3.11, -0.49, -0.19],
       } },
+      { t: 4.0, poses: {
+        head: [0, 0, -0.29],
+        neck: [-0.29, -0.64, 0],
+        chest: [0.01, 0, 0],
+        upperChest: [-0.09, 0, 0],
+        leftShoulder: [0.26, 0.11, -0.09],
+        leftUpperArm: [0.81, 1.26, 0.61],
+        leftLowerArm: [0.56, 1.46, -0.19],
+        leftHand: [0.86, 0, 0.71],
+        rightShoulder: [1.11, -0.09, -0.34],
+        rightUpperArm: [1.31, 0.06, 1.06],
+        rightLowerArm: [0.06, 2.46, 1.96],
+        rightHand: [3.11, -0.49, -0.19],
+      } },
+      { t: 4.5, poses: {} },
+    ],
+  },
+
+  pensar: {
+    duracion: 5.0,
+    keys: [
+      { t: 0.0, poses: {} },
+      { t: 0.7, poses: {
+        upperChest: [-0.09, 0, 0],
+        leftShoulder: [0.26, 0.11, -0.09],
+        leftUpperArm: [0.81, 1.26, 0.61],
+        leftLowerArm: [0.56, 1.46, -0.19],
+        leftHand: [0.86, 0, 0.71],
+        rightShoulder: [-2.19, 0.11, -0.09],
+        rightUpperArm: [1.41, 0.41, 0.51],
+        rightLowerArm: [0.96, -0.29, 2.26],
+        rightHand: [3.11, -0.49, -0.19],
+      } },
+      { t: 4.4, poses: {
+        upperChest: [-0.09, 0, 0],
+        leftShoulder: [0.26, 0.11, -0.09],
+        leftUpperArm: [0.81, 1.26, 0.61],
+        leftLowerArm: [0.56, 1.46, -0.19],
+        leftHand: [0.86, 0, 0.71],
+        rightShoulder: [-2.19, 0.11, -0.09],
+        rightUpperArm: [1.41, 0.41, 0.51],
+        rightLowerArm: [0.96, -0.29, 2.26],
+        rightHand: [3.11, -0.49, -0.19],
+      } },
+      { t: 5.0, poses: {} },
+    ],
+  },
+
+  absolute_cinema: {
+    duracion: 3.5,
+    keys: [
+      { t: 0.0, poses: {} },
       { t: 0.5, poses: {
-        rightUpperArm: [-1.5, 0, -0.5], rightLowerArm: [0, -2.0, 0], head: [0.3, 0, 0]
+        upperChest: [0.06, 0, 0],
+        leftShoulder: [0.91, -0.19, -0.34],
+        leftUpperArm: [0.26, 0.56, 0.36],
+        leftLowerArm: [-0.34, -1.94, -0.14],
+        leftHand: [0, 0, -0.04],
+        rightShoulder: [0.91, -0.44, -0.24],
+        rightUpperArm: [-0.54, 0.91, -0.14],
+        rightLowerArm: [-0.29, 0.71, 1.66],
+        rightHand: [0.16, 0.01, -0.09],
       } },
-      { t: 1.8, poses: {
-        rightUpperArm: [-1.5, 0, -0.5], rightLowerArm: [0, -2.0, 0], head: [0.3, 0, 0]
+      { t: 3.0, poses: {
+        upperChest: [0.06, 0, 0],
+        leftShoulder: [0.91, -0.19, -0.34],
+        leftUpperArm: [0.26, 0.56, 0.36],
+        leftLowerArm: [-0.34, -1.94, -0.14],
+        leftHand: [0, 0, -0.04],
+        rightShoulder: [0.91, -0.44, -0.24],
+        rightUpperArm: [-0.54, 0.91, -0.14],
+        rightLowerArm: [-0.29, 0.71, 1.66],
+        rightHand: [0.16, 0.01, -0.09],
       } },
-      { t: 2.2, poses: {
-        rightUpperArm: [0, 0, -1.2], rightLowerArm: [0, 0.2, 0], head: [0, 0, 0]
-      } },
+      { t: 3.5, poses: {} },
     ],
   },
 
-  brazos_abiertos: {
-    duracion: 1.5,
+  tapar_ojo: {
+    duracion: 3.2,
     keys: [
-      { t: 0.0, poses: {
-        leftUpperArm: [0, 0, 1.2], rightUpperArm: [0, 0, -1.2],
-      } },
-      { t: 0.4, poses: {
-        leftUpperArm: [0, 0, 2.0], rightUpperArm: [0, 0, -2.0],
-        leftLowerArm: [0, 0, 0], rightLowerArm: [0, 0, 0],
-      } },
-      { t: 1.0, poses: {
-        leftUpperArm: [0, 0, 2.0], rightUpperArm: [0, 0, -2.0],
-      } },
-      { t: 1.5, poses: {
-        leftUpperArm: [0, 0, 1.2], rightUpperArm: [0, 0, -1.2],
-        leftLowerArm: [0, -0.2, 0], rightLowerArm: [0, 0.2, 0],
-      } },
-    ],
-  },
-
-  brazos_cruzados: {
-    duracion: 1.0,
-    keys: [
-      { t: 0.0, poses: {
-        leftUpperArm: [0, 0, 1.2], rightUpperArm: [0, 0, -1.2],
-        leftLowerArm: [0, -0.2, 0], rightLowerArm: [0, 0.2, 0],
-      } },
+      { t: 0.0, poses: {} },
       { t: 0.5, poses: {
-        leftUpperArm: [0.5, 0, 0.8], rightUpperArm: [0.5, 0, -0.8],
-        leftLowerArm: [0, -1.5, 0], rightLowerArm: [0, 1.5, 0],
+        upperChest: [-0.09, 0, 0],
+        leftShoulder: [0.26, 0.11, -0.09],
+        leftUpperArm: [0.81, 1.26, 0.61],
+        leftLowerArm: [0.56, 1.46, -0.19],
+        leftHand: [0.86, 0, 0.71],
+        rightShoulder: [-2.19, 0.11, -0.09],
+        rightUpperArm: [0.81, -0.19, 0.46],
+        rightLowerArm: [0.96, -0.29, 2.26],
+        rightHand: [0.71, 0.26, 0.41],
       } },
-      { t: 1.0, poses: {
-        leftUpperArm: [0.5, 0, 0.8], rightUpperArm: [0.5, 0, -0.8],
-        leftLowerArm: [0, -1.5, 0], rightLowerArm: [0, 1.5, 0],
+      { t: 2.7, poses: {
+        upperChest: [-0.09, 0, 0],
+        leftShoulder: [0.26, 0.11, -0.09],
+        leftUpperArm: [0.81, 1.26, 0.61],
+        leftLowerArm: [0.56, 1.46, -0.19],
+        leftHand: [0.86, 0, 0.71],
+        rightShoulder: [-2.19, 0.11, -0.09],
+        rightUpperArm: [0.81, -0.19, 0.46],
+        rightLowerArm: [0.96, -0.29, 2.26],
+        rightHand: [0.71, 0.26, 0.41],
       } },
+      { t: 3.2, poses: {} },
     ],
   },
 
-  bostezar: {
+  asentir: {
     duracion: 2.0,
     keys: [
-      { t: 0.0, poses: {
-        leftUpperArm: [0, 0, 1.2], rightUpperArm: [0, 0, -1.2], head: [0, 0, 0]
-      } },
-      { t: 0.5, poses: {
-        leftUpperArm: [-1.8, 0, 2.0], rightUpperArm: [-1.8, 0, -2.0], head: [-0.3, 0, 0]
-      } },
-      { t: 1.2, poses: {
-        leftUpperArm: [-1.8, 0, 2.0], rightUpperArm: [-1.8, 0, -2.0], head: [-0.3, 0, 0]
-      } },
-      { t: 2.0, poses: {
-        leftUpperArm: [0, 0, 1.2], rightUpperArm: [0, 0, -1.2], head: [0, 0, 0]
-      } },
+      { t: 0.0, poses: { head: [0, 0, 0] } },
+      { t: 0.35, poses: { head: [0.3, 0, 0] } },
+      { t: 0.7, poses: { head: [-0.05, 0, 0] } },
+      { t: 1.05, poses: { head: [0.25, 0, 0] } },
+      { t: 1.4, poses: { head: [-0.02, 0, 0] } },
+      { t: 1.75, poses: { head: [0.2, 0, 0] } },
+      { t: 2.0, poses: { head: [0, 0, 0] } },
+    ],
+  },
+
+  negar: {
+    duracion: 2.0,
+    keys: [
+      { t: 0.0, poses: { head: [0, 0, 0] } },
+      { t: 0.3, poses: { head: [0, 0.4, 0] } },
+      { t: 0.6, poses: { head: [0, -0.4, 0] } },
+      { t: 0.9, poses: { head: [0, 0.4, 0] } },
+      { t: 1.2, poses: { head: [0, -0.4, 0] } },
+      { t: 1.5, poses: { head: [0, 0.3, 0] } },
+      { t: 2.0, poses: { head: [0, 0, 0] } },
     ],
   },
 
   ladear_cabeza: {
-    duracion: 1.5,
+    duracion: 3.0,
     keys: [
       { t: 0.0, poses: { head: [0, 0, 0] } },
-      { t: 0.5, poses: { head: [0, 0, 0.3] } },
-      { t: 1.0, poses: { head: [0, 0, 0.3] } },
-      { t: 1.5, poses: { head: [0, 0, 0] } },
-    ],
-  },
-
-  pulgar_arriba: {
-    duracion: 1.4,
-    keys: [
-      { t: 0.0, poses: { rightUpperArm: [0, 0, -1.2], rightLowerArm: [0, 0.2, 0] } },
-      { t: 0.3, poses: { rightUpperArm: [-0.6, 0, -0.6], rightLowerArm: [0, -1.5, 0] } },
-      { t: 1.0, poses: { rightUpperArm: [-0.6, 0, -0.6], rightLowerArm: [0, -1.5, 0] } },
-      { t: 1.4, poses: { rightUpperArm: [0, 0, -1.2], rightLowerArm: [0, 0.2, 0] } },
-    ],
-  },
-
-  estirarse: {
-    duracion: 2.2,
-    keys: [
-      { t: 0.0, poses: {
-        leftUpperArm: [0, 0, 1.2], rightUpperArm: [0, 0, -1.2], spine: [0, 0, 0]
-      } },
-      { t: 0.7, poses: {
-        leftUpperArm: [-2.5, 0, 2.5], rightUpperArm: [-2.5, 0, -2.5], spine: [-0.15, 0, 0]
-      } },
-      { t: 1.5, poses: {
-        leftUpperArm: [-2.5, 0, 2.5], rightUpperArm: [-2.5, 0, -2.5], spine: [-0.15, 0, 0]
-      } },
-      { t: 2.2, poses: {
-        leftUpperArm: [0, 0, 1.2], rightUpperArm: [0, 0, -1.2], spine: [0, 0, 0]
-      } },
+      { t: 0.6, poses: { head: [0, 0, 0.3] } },
+      { t: 2.4, poses: { head: [0, 0, 0.3] } },
+      { t: 3.0, poses: { head: [0, 0, 0] } },
     ],
   },
 };
@@ -259,6 +280,7 @@ const GESTOS = {
 let _modo = "png";
 let _emocionActual = "alegre";
 let _ttsActivo = false;
+let _modoAvatar = "vrm";  // "vrm" | "jarvis" | "png"
 
 let _imgEl = null;
 let _canvasEl = null;
@@ -282,14 +304,6 @@ let _gestoIntensidad = 1.0;
 // Easing cubic in-out (lo que quita el "plasticoso")
 function ease(t) {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-}
-
-// Suma rotaciones en un hueso target (modo aditivo sobre idle)
-function aplicarPose(hueso, [x, y, z], peso) {
-  if (!hueso) return;
-  hueso.rotation.x += x * peso;
-  hueso.rotation.y += y * peso;
-  hueso.rotation.z += z * peso;
 }
 
 function init() {
@@ -344,6 +358,7 @@ async function iniciarVRM() {
 
   const gltf = await loader.loadAsync(VRM_PATH);
   _vrm = gltf.userData.vrm;
+  window.__GEM_VRM__ = _vrm;
   try { VRMUtils.removeUnnecessaryVertices(gltf.scene); } catch (_) {}
   try { VRMUtils.combineSkeletons?.(gltf.scene); } catch (_) {}
 
@@ -379,7 +394,9 @@ function loop() {
   requestAnimationFrame(loop);
   const dt = _clock.getDelta();
   actualizarExpresiones(dt);
-  aplicarMovimientos(dt);
+  if (!window.__GEM_CALIBRANDO__) {
+    aplicarMovimientos(dt);
+  }
   _vrm.update(dt);
   _renderer.render(_scene, _camera);
 }
@@ -432,6 +449,11 @@ function aplicarMovimientos(dt) {
   const microIzq    = Math.sin(_gestoTiempo * 0.5) * 0.015;
   const microDer    = Math.sin(_gestoTiempo * 0.5 + 0.7) * 0.015;
 
+  const shoulderIzq = get("leftShoulder");
+  const shoulderDer = get("rightShoulder");
+  const manoIzq     = get("leftHand");
+  const manoDer     = get("rightHand");
+
   if (head)     head.rotation.set(
     Math.sin(_gestoTiempo * 0.4) * 0.015,
     Math.sin(_gestoTiempo * 0.6) * 0.01,
@@ -439,10 +461,16 @@ function aplicarMovimientos(dt) {
   );
   if (spine)    spine.rotation.set(respiracion * 0.5, 0, sway);
   if (chest)    chest.rotation.set(respiracion, 0, 0);
-  if (brazoIzq) brazoIzq.rotation.set(0, 0, 1.2 + microIzq);
-  if (brazoDer) brazoDer.rotation.set(0, 0, -1.2 + microDer);
-  if (antIzq)   antIzq.rotation.set(0, -0.2, 0.15);
-  if (antDer)   antDer.rotation.set(0, 0.2, -0.15);
+
+  if (shoulderIzq) shoulderIzq.rotation.set(0.41, 0.51, 0.36);
+  if (brazoIzq)    brazoIzq.rotation.set(0.21, 0.51, 0.81 + microIzq);
+  if (antIzq)      antIzq.rotation.set(0, 0, 0);
+  if (manoIzq)     manoIzq.rotation.set(0, 0, 0);
+
+  if (shoulderDer) shoulderDer.rotation.set(-1.94, 0.76, -0.29);
+  if (brazoDer)    brazoDer.rotation.set(-0.39, 0.31, 0.71 + microDer);
+  if (antDer)      antDer.rotation.set(-1.19, 2.61, 1.66);
+  if (manoDer)     manoDer.rotation.set(-0.34, 0.01, -0.09);
 
   // ── 2) Capa de habla (encima del idle, si hay TTS) ──
   if (_ttsActivo) {
@@ -496,7 +524,13 @@ function aplicarMovimientos(dt) {
       const x = a[0] + (b[0] - a[0]) * t;
       const y = a[1] + (b[1] - a[1]) * t;
       const z = a[2] + (b[2] - a[2]) * t;
-      aplicarPose(get(nombreHueso), [x, y, z], intensidad);
+      const hueso = get(nombreHueso);
+      if (hueso) {
+        // Mezcla entre pose neutra actual y pose del gesto, con la intensidad
+        hueso.rotation.x = hueso.rotation.x * (1 - intensidad) + x * intensidad;
+        hueso.rotation.y = hueso.rotation.y * (1 - intensidad) + y * intensidad;
+        hueso.rotation.z = hueso.rotation.z * (1 - intensidad) + z * intensidad;
+      }
     }
   }
 }
@@ -526,6 +560,10 @@ function mostrarFrame(emo, idx) {
 
 function cambiarEmocion(nuevaEmo) {
   _emocionActual = nuevaEmo;
+  if (_modoAvatar === "jarvis") {
+    Jarvis.cambiarEmocion(nuevaEmo);
+    return;
+  }
   if (_modo === "vrm") {
     const nuevaVRM = EMOCION_A_VRM[nuevaEmo] || "neutral";
     if (nuevaVRM !== _expresionActualVRM) {
@@ -541,6 +579,10 @@ function cambiarEmocion(nuevaEmo) {
 function iniciarHabla() {
   if (_ttsActivo) return;
   _ttsActivo = true;
+  if (_modoAvatar === "jarvis") {
+    Jarvis.iniciarHabla();
+    return;
+  }
   if (_modo === "vrm") _amplitudTarget = 0.5;
   else {
     document.getElementById("avatar")?.classList.add("talk");
@@ -553,13 +595,20 @@ function iniciarHabla() {
 }
 
 function actualizarAmplitudHabla(rms) {
+  if (_modoAvatar === "jarvis") {
+    Jarvis.setAmplitud(rms);
+    return;
+  }
   if (_modo === "vrm" && _ttsActivo) {
     _amplitudTarget = Math.min(1, Math.max(0, rms * 8));
   }
 }
-
 function detenerHabla() {
   _ttsActivo = false;
+  if (_modoAvatar === "jarvis") {
+    Jarvis.detenerHabla();
+    return;
+  }
   if (_modo === "vrm") _amplitudTarget = 0;
   else {
     document.getElementById("avatar")?.classList.remove("talk");
@@ -567,11 +616,64 @@ function detenerHabla() {
     mostrarFrame(_emocionActual, 0);
   }
 }
+async function _cambiarVozBackend(voz) {
+  try {
+    await fetch(`${BACKEND}/voz`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ voz }),
+    });
+  } catch (_) { /* silencioso */ }
+}
 
+function toggleModo() {
+  const wrap = document.getElementById("av-wrap");
+  // Transición suave
+  wrap.classList.add("switching");
+  setTimeout(() => wrap.classList.remove("switching"), 600);
+
+  if (_modoAvatar === "vrm" || _modoAvatar === "png") {
+    // Cambiar a Jarvis
+    _modoAvatar = "jarvis";
+    if (_imgEl) _imgEl.style.display = "none";
+    if (_canvasEl) _canvasEl.style.display = "none";
+    if (!Jarvis.estaActivo()) {
+      Jarvis.init(wrap);
+    }
+    Jarvis.activar();
+    Jarvis.cambiarEmocion(_emocionActual);
+    document.getElementById("btn-modo-avatar")?.setAttribute("title", "Cambiar a GEM");
+    document.getElementById("btn-modo-avatar").textContent = "🔮";
+    // Cambiar a voz masculina
+    _cambiarVozBackend(VOZ_JARVIS);
+    document.getElementById("msg").textContent = "Modo Jarvis activado 🔮";
+  } else {
+    // Cambiar a VRM (o PNG si no hay VRM)
+    Jarvis.desactivar();
+    if (_modo === "vrm" && _canvasEl) {
+      _modoAvatar = "vrm";
+      _canvasEl.style.display = "";
+    } else if (_imgEl) {
+      _modoAvatar = "png";
+      _imgEl.style.display = "";
+      mostrarFrame(_emocionActual, 0);
+    }
+    document.getElementById("btn-modo-avatar")?.setAttribute("title", "Cambiar a Jarvis");
+    document.getElementById("btn-modo-avatar").textContent = "👤";
+    // Restaurar voz femenina
+    _cambiarVozBackend(VOZ_GEM);
+    document.getElementById("msg").textContent = "Modo GEM activado 👤";
+  }
+}
+
+function getModoAvatar() {
+  return _modoAvatar;
+}
 export const Avatar = {
   init, mostrarFrame, cambiarEmocion,
   iniciarHabla, detenerHabla, actualizarAmplitudHabla,
   ejecutarGesto, gestosDisponibles,
+  toggleModo, getModoAvatar,
   emojiDe: (emo) => EMOJI[emo] || "😐",
   FRAMES: FRAMES_PNG, EMOJI,
 };

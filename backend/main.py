@@ -67,6 +67,14 @@ class PeticionMute(BaseModel):
     muteado: bool
 
 
+class PeticionModelo(BaseModel):
+    modelo: str
+
+
+class PeticionVoz(BaseModel):
+    voz: str
+
+
 class PeticionIdentidad(BaseModel):
     nombre: str
     muestras: int = 10
@@ -89,6 +97,36 @@ async def chat(p: PeticionTexto):
         raise HTTPException(400, "Texto vacío")
     respuesta = await orquestador.procesar_texto(p.texto)
     return {"respuesta": respuesta}
+
+
+@app.get("/modelo")
+async def get_modelo():
+    return {"modelo": ajustes.gemini_modelo}
+
+
+@app.post("/modelo")
+async def set_modelo(p: PeticionModelo):
+    modelo = p.modelo.strip()
+    if not modelo:
+        raise HTTPException(400, "Modelo vacío")
+    ajustes.gemini_modelo = modelo
+    log.info("Modelo cambiado a: %s", modelo)
+    return {"modelo": ajustes.gemini_modelo}
+
+
+@app.get("/voz")
+async def get_voz():
+    return {"voz": ajustes.tts_voz_cloud}
+
+
+@app.post("/voz")
+async def set_voz(p: PeticionVoz):
+    voz = p.voz.strip()
+    if not voz:
+        raise HTTPException(400, "Voz vacía")
+    ajustes.tts_voz_cloud = voz
+    log.info("Voz cambiada a: %s", voz)
+    return {"voz": ajustes.tts_voz_cloud}
 
 
 @app.post("/mute_microfono")

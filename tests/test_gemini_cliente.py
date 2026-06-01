@@ -72,6 +72,11 @@ def test_cache_lru_actualiza_orden():
 @pytest.mark.asyncio
 async def test_generar_respuesta_mock():
     from backend.modulos.gemini_cliente import generar_respuesta, set_cliente
+    from backend.config import ajustes
+
+    # Asegurar que se use el flujo de Gemini y no Claude durante este test mockeado
+    original_modelo = ajustes.gemini_modelo
+    ajustes.gemini_modelo = "gemini-2.5-flash"
 
     fake = MagicMock()
     fake_resp = MagicMock()
@@ -83,6 +88,7 @@ async def test_generar_respuesta_mock():
         r = await generar_respuesta(
             [{"rol": "user", "texto": "hola"}], system_prompt="test"
         )
-        assert r == "respuesta de prueba"
+        assert r == {"emocion": "neutro", "texto": "respuesta de prueba"}
     finally:
         set_cliente(None)
+        ajustes.gemini_modelo = original_modelo

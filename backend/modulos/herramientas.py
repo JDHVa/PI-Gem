@@ -13,6 +13,7 @@ import shutil
 from pathlib import Path
 from typing import Callable, Awaitable
 from google.genai import types
+from backend.modulos import git_tools
 
 WORKDIR = Path.home() / "GEM_workspace"
 WORKDIR.mkdir(exist_ok=True)
@@ -106,17 +107,37 @@ async def escribir_archivo(ruta: str, contenido: str) -> dict:
         return {"exito": False, "error": str(e)}
 
 
-async def editar_archivo(ruta: str, buscar: str, reemplazar: str) -> dict:
+async def editar_archivo(
+    ruta: str, buscar: str, reemplazar: str, crear_si_no_existe: bool = False
+) -> dict:
     try:
         p = _resolver(ruta)
         if not p.exists():
+            if crear_si_no_existe:
+                p.parent.mkdir(parents=True, exist_ok=True)
+                p.write_text(reemplazar, encoding="utf-8")
+                return {"exito": True, "resultado": f"Archivo creado: {p}"}
             return {"exito": False, "error": f"No existe: {p}"}
         texto = p.read_text(encoding="utf-8", errors="replace")
         if buscar not in texto:
-            return {"exito": False, "error": "Texto buscado no encontrado."}
-        nuevo = texto.replace(buscar, reemplazar, 1)
+            similares = [
+                l.strip()
+                for l in texto.splitlines()
+                if any(palabra in l.lower() for palabra in buscar.lower().split()[:3])
+            ][:3]
+            msg = "Texto buscado no encontrado."
+            if similares:
+                msg += f" Líneas similares:\n" + "\n".join(
+                    f"  · {s[:100]}" for s in similares
+                )
+            return {"exito": False, "error": msg}
+        conteo = texto.count(buscar)
+        nuevo = texto.replace(buscar, reemplazar)
         p.write_text(nuevo, encoding="utf-8")
-        return {"exito": True, "resultado": f"Reemplazado en {p}"}
+        return {
+            "exito": True,
+            "resultado": f"Reemplazado en {p} ({conteo} ocurrencia{'s' if conteo > 1 else ''})",
+        }
     except Exception as e:
         return {"exito": False, "error": str(e)}
 
@@ -150,30 +171,56 @@ async def crear_directorio(ruta: str) -> dict:
 
 
 async def buscar_en_archivos(
-    patron: str, directorio: str = ".", extension: str = ""
+    patron: str,
+    directorio: str = ".",
+    extension: str = "",
+    contexto: int = 3,
+    max_resultados: int = 30,
 ) -> dict:
     try:
         p = _resolver(directorio)
-        glob = f"**/*{extension}" if extension else "**/*"
+        glob_pat = f"**/*{extension}" if extension else "**/*"
         coincidencias = []
-        for archivo in p.glob(glob):
+        archivos_revisados = 0
+
+        for archivo in p.glob(glob_pat):
             if not archivo.is_file():
                 continue
+            if archivo.stat().st_size > 500_000:
+                continue
             try:
-                texto = archivo.read_text(encoding="utf-8", errors="ignore")
-                lineas = [
-                    f"{archivo.relative_to(p)}:{i+1}: {l.strip()}"
-                    for i, l in enumerate(texto.splitlines())
-                    if patron.lower() in l.lower()
-                ]
-                coincidencias.extend(lineas[:5])
+                lineas = archivo.read_text(
+                    encoding="utf-8", errors="ignore"
+                ).splitlines()
+                for i, linea in enumerate(lineas):
+                    if patron.lower() in linea.lower():
+                        inicio = max(0, i - contexto)
+                        fin = min(len(lineas), i + contexto + 1)
+                        bloque = []
+                        for j in range(inicio, fin):
+                            marca = ">>>" if j == i else "   "
+                            bloque.append(f"{marca} {j+1:4d} | {lineas[j]}")
+                        rel = archivo.relative_to(p)
+                        coincidencias.append(f"── {rel}:{i+1} ──\n" + "\n".join(bloque))
+                        if len(coincidencias) >= max_resultados:
+                            break
             except Exception:
                 continue
-            if len(coincidencias) > 50:
+            archivos_revisados += 1
+            if len(coincidencias) >= max_resultados:
                 break
+
         if not coincidencias:
-            return {"exito": True, "resultado": "Sin resultados."}
-        return {"exito": True, "resultado": "\n".join(coincidencias[:50])}
+            return {
+                "exito": True,
+                "resultado": f"Sin resultados para '{patron}' en {archivos_revisados} archivos.",
+            }
+        return {
+            "exito": True,
+            "resultado": "\n\n".join(coincidencias),
+            "total": len(coincidencias),
+            "archivos_revisados": archivos_revisados,
+        }
     except Exception as e:
         return {"exito": False, "error": str(e)}
 
@@ -304,6 +351,57 @@ def _resolver(ruta: str) -> Path:
 
 
 # ── Mapa nombre → función ──────────────────────────────────────────────
+async def git_status(directorio: str = ".") -> dict:
+    return await git_tools.git_status(str(_resolver(directorio)))
+
+
+async def git_diff(directorio: str = ".", archivo: str = "") -> dict:
+    return await git_tools.git_diff(str(_resolver(directorio)), archivo)
+
+
+async def git_log(directorio: str = ".", n: int = 10) -> dict:
+    return await git_tools.git_log(str(_resolver(directorio)), n)
+
+
+async def git_add(directorio: str = ".", archivos: str = ".") -> dict:
+    return await git_tools.git_add(str(_resolver(directorio)), archivos)
+
+
+async def git_commit(directorio: str = ".", mensaje: str = "") -> dict:
+    if not mensaje:
+        return {"exito": False, "error": "Necesito un mensaje de commit."}
+    return await git_tools.git_commit(str(_resolver(directorio)), mensaje)
+
+
+async def git_branch(directorio: str = ".") -> dict:
+    return await git_tools.git_branch(str(_resolver(directorio)))
+
+
+from backend.modulos import workspace_memory
+
+
+async def proyecto_info(directorio: str = ".") -> dict:
+    info = workspace_memory.resumen_proyecto(str(_resolver(directorio)))
+    return {
+        "exito": True,
+        "resultado": info or "No se encontró información del proyecto.",
+    }
+
+
+async def proyecto_memoria_leer(directorio: str = ".") -> dict:
+    mem = workspace_memory.leer_memoria(str(_resolver(directorio)))
+    if mem is None:
+        return {"exito": True, "resultado": "No hay .gem.md en este directorio."}
+    return {"exito": True, "resultado": mem}
+
+
+async def proyecto_memoria_escribir(directorio: str = ".", contenido: str = "") -> dict:
+    ok = workspace_memory.escribir_memoria(str(_resolver(directorio)), contenido)
+    return {
+        "exito": ok,
+        "resultado": ".gem.md actualizado." if ok else "Error escribiendo.",
+    }
+
 
 MAPA: dict[str, callable] = {
     "bash": bash,
@@ -316,6 +414,15 @@ MAPA: dict[str, callable] = {
     "buscar_en_archivos": buscar_en_archivos,
     "mover_archivo": mover_archivo,
     "eliminar": eliminar,
+    "git_status": git_status,
+    "git_diff": git_diff,
+    "git_log": git_log,
+    "git_add": git_add,
+    "git_commit": git_commit,
+    "git_branch": git_branch,
+    "proyecto_info": proyecto_info,
+    "proyecto_memoria_leer": proyecto_memoria_leer,
+    "proyecto_memoria_escribir": proyecto_memoria_escribir,
 }
 
 
@@ -423,13 +530,26 @@ DECLARACIONES = types.Tool(
         ),
         types.FunctionDeclaration(
             name="buscar_en_archivos",
-            description="Busca un patrón en archivos de un directorio.",
+            description=(
+                "Busca un patrón en archivos de un directorio. "
+                "Devuelve las coincidencias con ±3 líneas de contexto. "
+                "Ideal para encontrar funciones, variables, imports, bugs."
+            ),
             parameters=types.Schema(
                 type="OBJECT",
                 properties={
-                    "patron": types.Schema(type="STRING"),
-                    "directorio": types.Schema(type="STRING"),
-                    "extension": types.Schema(type="STRING"),
+                    "patron": types.Schema(type="STRING", description="Texto a buscar"),
+                    "directorio": types.Schema(
+                        type="STRING", description="Carpeta donde buscar"
+                    ),
+                    "extension": types.Schema(
+                        type="STRING",
+                        description="Filtrar por extensión (.py, .js, etc.)",
+                    ),
+                    "contexto": types.Schema(
+                        type="INTEGER",
+                        description="Líneas de contexto arriba/abajo (default 3)",
+                    ),
                 },
                 required=["patron"],
             ),
@@ -453,6 +573,134 @@ DECLARACIONES = types.Tool(
                 type="OBJECT",
                 properties={"ruta": types.Schema(type="STRING")},
                 required=["ruta"],
+            ),
+        ),
+        types.FunctionDeclaration(
+            name="git_status",
+            description="Muestra el estado de git (archivos modificados, branch actual).",
+            parameters=types.Schema(
+                type="OBJECT",
+                properties={"directorio": types.Schema(type="STRING")},
+            ),
+        ),
+        types.FunctionDeclaration(
+            name="git_diff",
+            description="Muestra los cambios no commiteados. Si se da un archivo, muestra solo ese diff.",
+            parameters=types.Schema(
+                type="OBJECT",
+                properties={
+                    "directorio": types.Schema(type="STRING"),
+                    "archivo": types.Schema(
+                        type="STRING", description="Archivo específico (opcional)"
+                    ),
+                },
+            ),
+        ),
+        types.FunctionDeclaration(
+            name="git_log",
+            description="Muestra el historial de commits recientes.",
+            parameters=types.Schema(
+                type="OBJECT",
+                properties={
+                    "directorio": types.Schema(type="STRING"),
+                    "n": types.Schema(
+                        type="INTEGER", description="Número de commits (default 10)"
+                    ),
+                },
+            ),
+        ),
+        types.FunctionDeclaration(
+            name="git_add",
+            description="Agrega archivos al staging area de git.",
+            parameters=types.Schema(
+                type="OBJECT",
+                properties={
+                    "directorio": types.Schema(type="STRING"),
+                    "archivos": types.Schema(
+                        type="STRING",
+                        description="Archivos a agregar (default '.' = todos)",
+                    ),
+                },
+            ),
+        ),
+        types.FunctionDeclaration(
+            name="git_commit",
+            description="Crea un commit con los archivos en staging.",
+            parameters=types.Schema(
+                type="OBJECT",
+                properties={
+                    "directorio": types.Schema(type="STRING"),
+                    "mensaje": types.Schema(
+                        type="STRING", description="Mensaje del commit"
+                    ),
+                },
+                required=["mensaje"],
+            ),
+        ),
+        types.FunctionDeclaration(
+            name="git_branch",
+            description="Lista las ramas del repositorio.",
+            parameters=types.Schema(
+                type="OBJECT",
+                properties={"directorio": types.Schema(type="STRING")},
+            ),
+        ),
+        types.FunctionDeclaration(
+            name="proyecto_info",
+            description="Muestra un resumen del proyecto: tecnologías, estructura, .gem.md.",
+            parameters=types.Schema(
+                type="OBJECT",
+                properties={"directorio": types.Schema(type="STRING")},
+            ),
+        ),
+        types.FunctionDeclaration(
+            name="proyecto_memoria_leer",
+            description="Lee el archivo .gem.md del proyecto (instrucciones persistentes).",
+            parameters=types.Schema(
+                type="OBJECT",
+                properties={"directorio": types.Schema(type="STRING")},
+            ),
+        ),
+        types.FunctionDeclaration(
+            name="proyecto_memoria_escribir",
+            description=(
+                "Escribe o actualiza el .gem.md del proyecto. "
+                "Usa esto para guardar instrucciones que deben persistir: "
+                "convenciones del proyecto, comandos frecuentes, notas técnicas."
+            ),
+            parameters=types.Schema(
+                type="OBJECT",
+                properties={
+                    "directorio": types.Schema(type="STRING"),
+                    "contenido": types.Schema(
+                        type="STRING", description="Contenido markdown del .gem.md"
+                    ),
+                },
+                required=["contenido"],
+            ),
+        ),
+        types.FunctionDeclaration(
+            name="editar_archivo",
+            description=(
+                "Reemplaza texto dentro de un archivo. Si el texto no se encuentra, "
+                "muestra líneas similares para ayudar. Puede crear el archivo si no existe."
+            ),
+            parameters=types.Schema(
+                type="OBJECT",
+                properties={
+                    "ruta": types.Schema(type="STRING"),
+                    "buscar": types.Schema(
+                        type="STRING", description="Texto exacto a encontrar"
+                    ),
+                    "reemplazar": types.Schema(
+                        type="STRING", description="Texto que lo sustituye"
+                    ),
+                    "crear_si_no_existe": types.Schema(
+                        type="BOOLEAN",
+                        description="Crear archivo si no existe (default false)",
+                    ),
+                },
+                required=["ruta", "buscar", "reemplazar"],
             ),
         ),
     ]

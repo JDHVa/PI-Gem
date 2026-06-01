@@ -282,7 +282,7 @@ class ModuloVision:
                 pass
 
     def _loop_camara(self) -> None:
-        camara = cv2.VideoCapture(0)
+        camara = cv2.VideoCapture(2)
         if not camara.isOpened():
             log.error("No se pudo abrir la cámara")
             return

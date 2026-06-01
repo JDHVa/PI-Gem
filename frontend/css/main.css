@@ -82,6 +82,23 @@ body {
   image-rendering: high-quality;
 }
 
+/* ── Jarvis orbe 2D ──────────────────────────────── */
+#jarvis2d {
+  width: 460px !important;
+  height: 460px !important;
+  filter: drop-shadow(0 0 30px rgba(0,200,255,.4));
+}
+
+/* Transición suave al cambiar de modo */
+#av-wrap.switching {
+  animation: switchPulse 0.6s ease-out;
+}
+@keyframes switchPulse {
+  0%   { opacity: 0.3; transform: scale(0.85); }
+  50%  { opacity: 0.8; transform: scale(1.05); }
+  100% { opacity: 1;   transform: scale(1); }
+}
+
 /* ── Badge ────────────────────────────────────────── */
 #badge {
   display: flex;
@@ -514,3 +531,227 @@ body {
 }
 .at-paso.error { color: var(--red); }
 .at-paso.ok    { color: var(--green); }
+
+
+#calibrador-panel {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  width: 360px;
+  max-height: 90vh;
+  background: rgba(7,9,14,0.97);
+  border: 1px solid var(--cyan);
+  border-radius: 12px;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  color: var(--text);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  backdrop-filter: blur(10px);
+}
+.cal-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--bord);
+  color: var(--cyan);
+}
+.cal-header span { flex: 1; font-size: 11px; letter-spacing: 1px; }
+.cal-header button {
+  background: rgba(0,200,255,0.1);
+  border: 1px solid var(--bord);
+  color: var(--cyan);
+  font-size: 10px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.cal-header button:hover { background: rgba(0,200,255,0.2); }
+.cal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 12px;
+}
+.cal-grupo { margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px dashed rgba(0,200,255,0.1); }
+.cal-hueso {
+  color: var(--cyan);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+  font-weight: bold;
+}
+.cal-fila {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 0;
+}
+.cal-eje { width: 12px; color: var(--sub); }
+.cal-fila input[type=range] {
+  flex: 1;
+  accent-color: var(--cyan);
+}
+.cal-val {
+  width: 42px;
+  text-align: right;
+  color: var(--text);
+  font-size: 10px;
+}
+#cal-output {
+  max-height: 140px;
+  overflow-y: auto;
+  background: #050810;
+  border-top: 1px solid var(--bord);
+  margin: 0;
+  padding: 8px 12px;
+  font-size: 10px;
+  color: var(--green);
+  white-space: pre-wrap;
+}
+#jarvis3d {
+  width: 460px !important;
+  height: 460px !important;
+  image-rendering: auto;
+  image-rendering: high-quality;
+}
+
+#jarvis2d {
+  width: 460px !important;
+  height: 460px !important;
+}
+
+#fab-regresar {
+  display: none;
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(0, 200, 255, 0.15);
+  border: 1px solid rgba(0, 200, 255, 0.4);
+  color: var(--cyan);
+  font-size: 18px;
+  cursor: pointer;
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(8px);
+  transition: all 0.3s;
+}
+#fab-regresar:hover {
+  background: rgba(0, 200, 255, 0.3);
+  transform: scale(1.1);
+}
+
+/* ── Model selector ──────────────────────────────── */
+.modelo-actual {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  color: var(--cyan);
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  background: rgba(0,200,255,0.06);
+  border: 1px solid rgba(0,200,255,0.2);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.modelo-actual::before {
+  content: '●';
+  color: var(--green);
+  font-size: 8px;
+}
+.modelo-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 280px;
+  overflow-y: auto;
+  margin-bottom: 14px;
+}
+.modelo-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: var(--panel);
+  border: 1px solid var(--bord);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.modelo-item:hover {
+  border-color: rgba(0,200,255,0.5);
+  background: rgba(0,200,255,0.08);
+}
+.modelo-item.active {
+  border-color: var(--cyan);
+  background: rgba(0,200,255,0.12);
+}
+.modelo-item .modelo-nombre {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  color: var(--text);
+}
+.modelo-item.active .modelo-nombre {
+  color: var(--cyan);
+}
+.modelo-item .modelo-tag {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.modelo-tag.gemini {
+  background: rgba(0,255,136,0.1);
+  color: var(--green);
+  border: 1px solid rgba(0,255,136,0.25);
+}
+.modelo-tag.claude {
+  background: rgba(255,170,0,0.1);
+  color: var(--amb);
+  border: 1px solid rgba(255,170,0,0.25);
+}
+
+/* ── Modo Solo Texto ──────────────────────────────── */
+body.solo-texto #av-wrap,
+body.solo-texto #badge,
+body.solo-texto #vad,
+body.solo-texto #msg,
+body.solo-texto #dots {
+  display: none !important;
+}
+
+body.solo-texto #btn-modo-avatar,
+body.solo-texto #btn-proactivo,
+body.solo-texto #btn-skills,
+body.solo-texto #btn-perfil,
+body.solo-texto #btn-cam,
+body.solo-texto #btn-modelo {
+  display: none !important;
+}
+
+body.solo-texto #drag {
+  border-radius: 12px 12px 0 0 !important;
+}
+
+body.solo-texto #input-row {
+  border-radius: 0 0 12px 12px !important;
+}
+
+#btn-toggle-avatar {
+  display: none;
+}
+body.solo-texto #btn-toggle-avatar {
+  display: flex !important;
+}
+body.solo-texto.avatar-visible #av-wrap {
+  display: flex !important;
+}

@@ -3,7 +3,7 @@ import { Avatar }  from './avatar.js';
 import { Chat }    from './chat.js';
 import { Confirm } from './confirm.js';
 import { Agent }   from './agent.js';
-
+import { Jarvis } from './jarvis.js';
 let _ws = null;
 
 function setBadge(cls, txt) {
@@ -34,6 +34,7 @@ function conectar() {
     }
     else if (d.tipo === "vad") {
       document.getElementById("vad").classList.toggle("on", d.hablando);
+      Jarvis.setVAD(d.hablando);
       setBadge(
         d.hablando ? "escuchando" : (window.GEM.state.ttsActivo ? "gem-habla" : "idle"),
         d.hablando ? "Te escucho" : (window.GEM.state.ttsActivo ? "Respondiendo" : "En espera")

@@ -15,6 +15,9 @@ google-cloud-texttospeech>=2.16.0
 # ───── Autenticación Google Cloud ─────
 google-auth>=2.28.0
 
+# ───── Anthropic SDK (Claude on Vertex AI) ─────
+anthropic>=0.25.0
+
 # ───── TTS: Edge (gratis) ─────
 edge-tts>=7.0.0
 # pydub>=0.25.1            # opcional si no tienes ffmpeg

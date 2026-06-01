@@ -8,7 +8,8 @@ import { Confirm } from './confirm.js';
 import { Agent }   from './agent.js';
 import { App }     from './app.js';
 import { Camara }  from './camara.js';
-
+import { Calibrador } from './calibrador.js';
+import { Modelo } from './modelo.js';
 export const BACKEND = "http://127.0.0.1:8770";
 export const WS_URL  = "ws://localhost:8770/ws";
 
@@ -24,6 +25,9 @@ window.GEM = {
   agent:   Agent,
   app:     App,
   camara:  Camara,
+  modelo:  Modelo,
+  calibrador: Calibrador,
+
 };
 
 // Avatar inicial
@@ -35,7 +39,12 @@ WS.conectar();
 
 // Estado: poll cada 2s
 Status.iniciar();
-
+const _esperarVRM = setInterval(() => {
+  if (window.__GEM_VRM__) {
+    Calibrador.setVRM(window.__GEM_VRM__);
+    clearInterval(_esperarVRM);
+  }
+}, 500);
 // Input: Enter envía
 document.getElementById("ti").addEventListener("keydown", e => {
   if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); Chat.enviar(); }

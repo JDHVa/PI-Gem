@@ -76,32 +76,86 @@ def _historial_a_contents(historial: list[dict]) -> list[types.Content]:
     ]
 
 
+_anthropic_cliente = None
+
+
+def _get_anthropic_cliente():
+    global _anthropic_cliente
+    if _anthropic_cliente is None:
+        import os
+        from anthropic import AsyncAnthropicVertex
+        region = os.getenv("VERTEX_LOCATION_ANTHROPIC", "global")
+        project = ajustes.vertex_project or os.getenv("VERTEX_PROJECT", "")
+        log.info(
+            "Conectando a Anthropic Vertex AI (Async) — proyecto=%s región=%s",
+            project,
+            region,
+        )
+        _anthropic_cliente = AsyncAnthropicVertex(
+            project_id=project,
+            region=region,
+        )
+    return _anthropic_cliente
+
+
+def _historial_a_anthropic(historial: list[dict]) -> list[dict]:
+    return [
+        {
+            "role": "user" if t["rol"] == "user" else "assistant",
+            "content": t["texto"],
+        }
+        for t in historial
+    ]
+
+
 import json as _json
 
 
 async def generar_respuesta(historial: list[dict], system_prompt: str) -> dict:
     """
     Devuelve {"emocion": str, "texto": str}.
-    Si Gemini no respeta el formato, hace fallback: emocion="neutro", texto=raw.
+    Si el LLM no respeta el formato, hace fallback: emocion="neutro", texto=raw.
     """
-    cliente = _get_cliente()
-    contents = _historial_a_contents(historial)
-    config = types.GenerateContentConfig(
-        system_instruction=system_prompt,
-        temperature=0.7,
-        max_output_tokens=1024,
-        response_mime_type="application/json",
-    )
+    modelo = ajustes.gemini_modelo
 
-    def _llamar() -> str:
-        resp = cliente.models.generate_content(
-            model=ajustes.gemini_modelo,
-            contents=contents,
-            config=config,
+    if modelo.startswith("claude"):
+        cliente = _get_anthropic_cliente()
+        contents = _historial_a_anthropic(historial)
+        try:
+            resp = await cliente.messages.create(
+                model=modelo,
+                messages=contents,
+                system=system_prompt,
+                max_tokens=1024,
+                temperature=0.7,
+            )
+            raw = resp.content[0].text.strip()
+        except Exception as e:
+            log.error("Error al llamar a Anthropic Vertex (%s): %s", modelo, e)
+            return {
+                "emocion": "confundido",
+                "texto": f"Error al llamar al modelo Claude: {e}",
+            }
+    else:
+        cliente = _get_cliente()
+        contents = _historial_a_contents(historial)
+        config = types.GenerateContentConfig(
+            system_instruction=system_prompt,
+            temperature=0.7,
+            max_output_tokens=1024,
+            response_mime_type="application/json",
         )
-        return (resp.text or "").strip()
 
-    raw = await asyncio.to_thread(_llamar)
+        def _llamar() -> str:
+            resp = cliente.models.generate_content(
+                model=modelo,
+                contents=contents,
+                config=config,
+            )
+            return (resp.text or "").strip()
+
+        raw = await asyncio.to_thread(_llamar)
+
     raw = (
         raw.strip()
         .removeprefix("```json")
@@ -120,8 +174,7 @@ async def generar_respuesta(historial: list[dict], system_prompt: str) -> dict:
             }
     except Exception:
         pass
-    log.info("Respuesta cruda Gemini: %r", raw)
-    log.info("Parseado: %r", obj if "obj" in dir() else "no parseado")
+    log.info("Respuesta cruda modelo: %r", raw)
     return {"emocion": "neutro", "texto": raw}
 
 

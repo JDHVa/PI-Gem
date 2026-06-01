@@ -66,7 +66,7 @@ _REGEX_EJECUTAR_SKILL = re.compile(
     re.IGNORECASE,
 )
 _REGEX_SCREENSHOT = re.compile(
-    r"(?:mira|revisa|ve|analiza|que ves)\s+(?:mi\s+)?(?:pantalla|screen)",
+    r"(?:mira|revisa|ve|analiza|qu[eé]\s+ves)\s+(?:mi\s+|en\s+(?:la\s+)?)?(?:pantalla|screen)",
     re.IGNORECASE,
 )
 
