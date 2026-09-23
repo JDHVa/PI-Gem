@@ -186,7 +186,10 @@ class Orquestador:
         await self._broadcaster.broadcast({"tipo": "procesando", "activo": activo})
 
     async def _enviar_paso_agente(self, evento: dict):
-        await self._broadcaster.broadcast({"tipo": "agente", **evento})
+        msg = dict(evento)
+        msg["subtipo"] = msg.get("tipo", "")
+        msg["tipo"] = "agente"
+        await self._broadcaster.broadcast(msg)
 
     async def _on_trigger_proactivo(self, mensaje: str, tipo: str):
         if self._procesando or self._silenciado:

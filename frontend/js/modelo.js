@@ -3,7 +3,7 @@ import { BACKEND } from './main.js';
 const MODELOS_DISPONIBLES = [
   { id: 'gemini-2.5-flash',           nombre: 'Gemini 2.5 Flash',       tipo: 'gemini' },
   { id: 'gemini-3.5-flash',           nombre: 'Gemini 3.5 Flash',       tipo: 'gemini' },
-  { id: 'gemini-3.1-pro',             nombre: 'Gemini 3.1 Pro',         tipo: 'gemini' },
+  { id: 'gemini-3.1-pro-preview',     nombre: 'Gemini 3.1 Pro',         tipo: 'gemini' },
   { id: 'claude-opus-4-7',            nombre: 'Claude Opus 4.7',        tipo: 'claude' },
   { id: 'claude-sonnet-4-6',          nombre: 'Claude Sonnet 4.6',      tipo: 'claude' },
   { id: 'claude-3-5-sonnet-v2@20241022', nombre: 'Claude 3.5 Sonnet v2', tipo: 'claude' },

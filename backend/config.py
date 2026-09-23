@@ -85,6 +85,7 @@ class Ajustes(BaseSettings):
     chromadb_path: str = str(RAIZ_PROYECTO / "data" / "chromadb")
     rag_top_k: int     = 4
     historial_path: str = str(RAIZ_PROYECTO / "data" / "historial.json")
+    obsidian_vault_path: str = str(RAIZ_PROYECTO / "data" / "obsidian")
 
     ps_max_retries: int = 3
     ps_timeout_s: int   = 60

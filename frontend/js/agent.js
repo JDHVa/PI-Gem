@@ -20,7 +20,9 @@ function agregarPaso(evento) {
   const c = _cont();
   if (!c) return;
 
-  if (evento.tipo === "inicio") {
+  const tipo = evento.subtipo || evento.tipo;
+
+  if (tipo === "inicio") {
     c.innerHTML = "";
     _mostrar();
     const el = document.createElement("div");
@@ -30,12 +32,24 @@ function agregarPaso(evento) {
     return;
   }
 
-  if (evento.tipo === "pensando") {
+  if (tipo === "pensando") {
     // No agregamos por cada "pensando" — sería ruido
     return;
   }
 
-  if (evento.tipo === "herramienta_llama") {
+  if (tipo === "pensamiento") {
+    _mostrar();
+    const el = document.createElement("div");
+    el.className = "at-paso";
+    el.style.color = "#888";
+    el.style.fontStyle = "italic";
+    el.textContent = `💭 ${evento.texto}`;
+    c.appendChild(el);
+    c.scrollTop = c.scrollHeight;
+    return;
+  }
+
+  if (tipo === "herramienta_llama") {
     _mostrar();
     const el = document.createElement("div");
     el.className = "at-paso";
@@ -46,13 +60,13 @@ function agregarPaso(evento) {
     return;
   }
 
-  if (evento.tipo === "herramienta_ok") {
+  if (tipo === "herramienta_ok") {
     const ultimo = c.lastElementChild;
     if (ultimo) ultimo.classList.add("ok");
     return;
   }
 
-  if (evento.tipo === "herramienta_error") {
+  if (tipo === "herramienta_error") {
     const ultimo = c.lastElementChild;
     if (ultimo) {
       ultimo.classList.add("error");
@@ -61,7 +75,7 @@ function agregarPaso(evento) {
     return;
   }
 
-  if (evento.tipo === "fin") {
+  if (tipo === "fin") {
     const el = document.createElement("div");
     el.className = "at-paso ok";
     el.textContent = `✓ Listo (${evento.pasos || 0} pasos)`;

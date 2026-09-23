@@ -498,19 +498,7 @@ DECLARACIONES = types.Tool(
                 required=["ruta", "contenido"],
             ),
         ),
-        types.FunctionDeclaration(
-            name="editar_archivo",
-            description="Reemplaza una cadena dentro de un archivo existente.",
-            parameters=types.Schema(
-                type="OBJECT",
-                properties={
-                    "ruta": types.Schema(type="STRING"),
-                    "buscar": types.Schema(type="STRING"),
-                    "reemplazar": types.Schema(type="STRING"),
-                },
-                required=["ruta", "buscar", "reemplazar"],
-            ),
-        ),
+
         types.FunctionDeclaration(
             name="listar_directorio",
             description="Lista archivos y carpetas.",

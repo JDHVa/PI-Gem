@@ -23,28 +23,84 @@ class MemoriaRAG:
             )
             for nombre in COLECCIONES
         }
+        self._vault_path = Path(ajustes.obsidian_vault_path)
+        for nombre in COLECCIONES:
+            (self._vault_path / nombre).mkdir(parents=True, exist_ok=True)
 
     async def guardar(
         self,
         texto: str,
         coleccion: str = "conversaciones",
         metadata: dict | None = None,
+        titulo: str | None = None,
     ) -> None:
         if coleccion not in self._cols:
             raise ValueError(f"Colección desconocida: {coleccion}")
-        embedding = await generar_embedding(texto)
+        
+        doc_id = str(uuid.uuid4())
+        nombre_archivo = f"{titulo}.md" if titulo else f"nota_{doc_id[:8]}.md"
+        ruta_archivo = self._vault_path / coleccion / nombre_archivo
+        
         meta = {
             "timestamp": datetime.now().isoformat(),
             "coleccion": coleccion,
+            "archivo": nombre_archivo,
         }
         if metadata:
             meta.update(metadata)
+            
+        # Escribir en la bóveda de Obsidian
+        contenido_md = "---\n"
+        for k, v in meta.items():
+            contenido_md += f"{k}: {v}\n"
+        contenido_md += f"---\n\n{texto}\n"
+        try:
+            with ruta_archivo.open("w", encoding="utf-8") as f:
+                f.write(contenido_md)
+        except Exception as e:
+            log.warning("No se pudo guardar en Obsidian: %s", e)
+
+        embedding = await generar_embedding(texto)
         self._cols[coleccion].add(
-            ids=[str(uuid.uuid4())],
+            ids=[doc_id],
             embeddings=[embedding],
             documents=[texto],
             metadatas=[meta],
         )
+
+    async def sincronizar_desde_obsidian(self) -> None:
+        """Lee la bóveda de Obsidian y actualiza ChromaDB con notas nuevas."""
+        for coleccion in COLECCIONES:
+            ruta_col = self._vault_path / coleccion
+            if not ruta_col.exists():
+                continue
+            
+            col_db = self._cols[coleccion]
+            existentes = col_db.get()
+            ids_existentes = set(existentes["ids"]) if existentes and "ids" in existentes else set()
+            
+            for archivo in ruta_col.glob("*.md"):
+                doc_id = f"obs_{archivo.stem}"
+                if doc_id in ids_existentes:
+                    continue
+                
+                try:
+                    contenido = archivo.read_text(encoding="utf-8")
+                    partes = contenido.split("---\n")
+                    texto_puro = partes[-1].strip() if len(partes) > 2 else contenido.strip()
+                    if not texto_puro:
+                        continue
+                    
+                    emb = await generar_embedding(texto_puro)
+                    col_db.add(
+                        ids=[doc_id],
+                        embeddings=[emb],
+                        documents=[texto_puro],
+                        metadatas=[{"fuente": "obsidian", "archivo": archivo.name}]
+                    )
+                    log.info("Indexado desde Obsidian: %s/%s", coleccion, archivo.name)
+                except Exception as e:
+                    log.warning("Error sincronizando %s: %s", archivo.name, e)
 
     async def _buscar_con_embedding(
         self, embedding: list[float], coleccion: str, k: int,

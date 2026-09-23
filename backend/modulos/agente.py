@@ -156,8 +156,12 @@ class AgenteGEM:
                 p.text for p in partes if getattr(p, "text", None) and p.text.strip()
             ]
 
+            texto_pensamiento = " ".join(textos)
+            if texto_pensamiento and llamadas and on_paso:
+                await on_paso({"tipo": "pensamiento", "texto": texto_pensamiento})
+
             if not llamadas:
-                texto_final = " ".join(textos) if textos else "Listo."
+                texto_final = texto_pensamiento if texto_pensamiento else "Listo."
                 if on_paso:
                     await on_paso({"tipo": "fin", "texto": texto_final, "pasos": pasos})
                 return texto_final

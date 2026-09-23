@@ -19,6 +19,12 @@ orquestador = Orquestador(broadcaster)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     log.info("Iniciando GEM en %s:%s", ajustes.fastapi_host, ajustes.fastapi_port)
+    # Sincronizar notas de Obsidian hacia ChromaDB al iniciar
+    try:
+        await orquestador._memoria.sincronizar_desde_obsidian()
+    except Exception as e:
+        log.warning("Error sincronizando Obsidian: %s", e)
+        
     await orquestador.iniciar()
     yield
     await orquestador.detener()

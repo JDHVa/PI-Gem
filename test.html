@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini - El Futuro de la IA</title>
+    <style>
+        :root {
+            --bg-color: #080710;
+            --card-bg: #131129;
+            --text-color: #f3f4f6;
+            --text-muted: #9ca3af;
+            --gradient-1: #7928ca;
+            --gradient-2: #ff0080;
+            --gemini-blue: #4285f4;
+            --gemini-purple: #9b51e0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Navbar */
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2rem 5%;
+            position: absolute;
+            width: 100%;
+            z-index: 10;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, var(--gemini-blue), var(--gemini-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--text-color);
+        }
+
+        /* Hero Section */
+        .hero {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 0 1rem;
+            position: relative;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 20%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(155,81,224,0.3) 0%, rgba(0,0,0,0) 70%);
+            filter: blur(40px);
+            z-index: -1;
+        }
+
+        .hero h1 {
+            font-size: 4rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            letter-spacing: -1px;
+            background: linear-gradient(to right, #ffffff, #a5b4fc, #6366f1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin-bottom: 2.5rem;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, var(--gemini-blue), var(--gemini-purple));
+            color: white;
+            padding: 0.75rem 2rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(155, 81, 224, 0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(155, 81, 224, 0.6);
+        }
+
+        /* Features Section */
+        .features {
+            padding: 5rem 5%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+            background: linear-gradient(to right, #fff, #9ca3af);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            padding: 2.5rem;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: transform 0.3s, border-color 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(155, 81, 224, 0.3);
+        }
+
+        .card-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            display: inline-block;
+        }
+
+        .card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .card p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            margin-top: 5rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+            .hero p {
+                font-size: 1rem;
+            }
+            .nav-links {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="logo">Gemini Hub</div>
+        <ul class="nav-links">
+            <li><a href="#inicio">Inicio</a></li>
+            <li><a href="#capacidades">Capacidades</a></li>
+            <li><a href="#modelos">Modelos</a></li>
+        </ul>
+    </nav>
+
+    <section class="hero" id="inicio">
+        <h1>Construido para la era multimodal</h1>
+        <p>Gemini es el modelo de inteligencia artificial más capaz de Google, diseñado desde cero para comprender e interactuar fluidamente con texto, código, imágenes, audio y video.</p>
+        <a href="#capacidades" class="btn">Explorar capacidades</a>
+    </section>
+
+    <section class="features" id="capacidades">
+        <h2 class="section-title">Rendimiento de Próxima Generación</h2>
+        <div class="grid">
+            <div class="card">
+                <div class="card-icon" style="color: #4285f4;">✦</div>
+                <h3>Nativamente Multimodal</h3>
+                <p>A diferencia de otros modelos que combinan componentes separados, Gemini fue entrenado en diferentes modalidades desde el inicio, permitiéndole razonar sin esfuerzo entre distintas entradas.</p>
+            </div>
+            <div class="card">
+                <div class="card-icon" style="color: #a5b4fc;">💻</div>
+                <h3>Razonamiento Avanzado</h3>
+                <p>Destaca en tareas complejas como la generación y depuración de código de alta calidad en múltiples lenguajes, el análisis de datos matemáticos y la resolución de problemas lógicos.</p>
+            </div>
+            <div class="card">
+                <div class="card-icon" style="color: #9b51e0;">⚡</div>
+                <h3>Eficiencia a Escala</h3>
+                <p>Diseñado para operar eficientemente desde centros de datos masivos hasta dispositivos móviles, optimizando el procesamiento para respuestas ultrarrápidas.</p>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2026 Una mirada al ecosistema de Gemini. Inspirado en la innovación continua.</p>
+    </footer>
+
+</body>
+</html>
